@@ -33,3 +33,19 @@ services:
     depends_on:
       - server
     restart: always
+
+  db:
+    image: postgres:15-alpine
+    container_name: dormstay-db
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=dormstay
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  db-data:
