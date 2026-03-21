@@ -1,0 +1,431 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ================= ENUMS =================
+
+enum HinhThucThue {
+  NGUYEN_CAN
+  O_GHEP
+}
+
+enum LoaiNhanVien {
+  SALE
+  QUAN_LY
+  KE_TOAN
+}
+
+enum TrangThaiLichHen {
+  CHUA_XEM
+  DA_XEM
+}
+
+enum TrangThaiSauHen {
+  DAT_COC
+  CHUA_QUYET_DINH
+  KHONG_CHON
+}
+
+enum PhuongThucThanhToan {
+  TIEN_MAT
+  CHUYEN_KHOAN
+}
+
+enum TrangThaiThanhToan {
+  THANH_CONG
+  CHUA_HOAN_THANH
+  BI_HUY
+}
+
+enum LoaiPhieuGhiCoc {
+  GHI_NO
+  GHI_HOAN
+  THONG_THUONG
+}
+
+// ================= MODELS =================
+
+model TaiKhoan {
+  idTaiKhoan   Int           @id @default(autoincrement())
+  taiKhoan     String        @unique
+  matKhau      String
+  email        String        @unique
+  ngaySinh     DateTime?
+  
+  // Quan hệ 1-1 với KhachHang (Tài khoản có thể chưa liên kết khách hàng)
+  khachHang    KhachHang?
+  
+  // Quan hệ 1-1 với PhieuYeuCau (Phiếu mới nhất)
+  phieuMoiNhatId Int?        @unique
+  phieuMoiNhat PhieuYeuCau?  @relation("PhieuMoiNhat", fields: [phieuMoiNhatId], references: [idPhieu])
+  
+  // Quan hệ 1-n
+  lichSuTaos   LichSuTaoPhieu[]
+}
+
+model KhachHang {
+  idKhachHang    Int           @id @default(autoincrement())
+  hoTen          String
+  sdt            String
+  email          String?
+  gioiTinh       String?
+  cccd           String        @unique
+  quocTich       String?
+  minhChungTC    String?
+  
+  // Quan hệ 1-1 với TaiKhoan
+  idTaiKhoan     Int?          @unique
+  taiKhoan       TaiKhoan?     @relation(fields: [idTaiKhoan], references: [idTaiKhoan])
+  
+  // FK tới Phiếu yêu cầu hiện tại của khách
+  phieuYeuCauId  Int?
+  
+  // Các quan hệ khác
+  ttinDatCocs    TtinDatCoc[]
+  chiTietHopDongs ChiTietHopDongThue[]
+  banGhiChiPhis  BanGhiChiPhi[]
+}
+
+model PhieuYeuCau {
+  idPhieu         Int           @id @default(autoincrement())
+  hinhThucThue    HinhThucThue
+  soNguoi         Int
+  khuVucMongMuon  String?
+  giaMongMuon     Float?
+  thoiDiemVao     DateTime?
+  thoiHanThue     Int?
+  yeuCauThem      String?
+  loaiPhong       String?
+  
+  taiKhoanMoiNhat TaiKhoan?     @relation("PhieuMoiNhat")
+  lichSuTaos      LichSuTaoPhieu[]
+  lichXemPhongs   LichXemPhong[]
+  hopDongs        HopDongThue[]
+}
+
+model LichSuTaoPhieu {
+  idPhieu    Int
+  idTaiKhoan Int
+  ngayTao    DateTime @default(now())
+  
+  phieu      PhieuYeuCau @relation(fields: [idPhieu], references: [idPhieu])
+  taiKhoan   TaiKhoan    @relation(fields: [idTaiKhoan], references: [idTaiKhoan])
+  
+  @@id([idPhieu, idTaiKhoan])
+}
+
+// Thay vì chia 4 bảng kế thừa (Nhân viên, Sale, Quản lý, Kế toán), 
+// trong CSDL quan hệ thực tế thường gộp chung và phân biệt bằng Enum Role.
+model NhanVien {
+  idNhanVien Int          @id @default(autoincrement())
+  hoTen      String
+  gioiTinh   String?
+  sdt        String
+  email      String       @unique
+  cccd       String       @unique
+  loai       LoaiNhanVien
+  trangThai  Boolean      @default(true) // Cho nhân viên Sale
+  
+  // Quan hệ cho Quản lý
+  phongs     Phong[]
+  quyDinhs   QuyDinh[]
+  kiemTras   BienBanKiemTraPhong[]
+}
+
+model LichXemPhong {
+  idLichHen   Int              @id @default(autoincrement())
+  idPhieu     Int
+  thoiGianHen DateTime
+  diaDiem     String?
+  ttLichHen   TrangThaiLichHen @default(CHUA_XEM)
+  ttSauHen    TrangThaiSauHen?
+  
+  phieu       PhieuYeuCau      @relation(fields: [idPhieu], references: [idPhieu])
+}
+
+model Phong {
+  idPhong         Int           @id @default(autoincrement())
+  idQuanLy        Int
+  loaiPhong       String
+  sucChua         Int
+  trangThai       String        // VD: TRONG, DA_THUE
+  chiPhiDienNuoc  Float?
+  dichVuDiKem     String?
+  
+  quanLy          NhanVien      @relation(fields: [idQuanLy], references: [idNhanVien])
+  giuongs         Giuong[]
+  ctQuyDinhs      CtQuyDinh[]
+  ctLuuTrus       CtLuuTru[]
+  quanLyTaiSans   QuanLyTaiSan[]
+  kiemTras        BienBanKiemTraPhong[]
+}
+
+model Giuong {
+  idGiuong    Int           @id @default(autoincrement())
+  idPhong     Int
+  viTri       String?
+  giaGiuong   Float
+  trangThai   Boolean       @default(true) 
+  idKhachHang Int?          // ID Khách hàng đang ở (nếu có)
+  
+  phong       Phong         @relation(fields: [idPhong], references: [idPhong])
+  ttinDatCocs TtinDatCoc[]
+  chiTietHopDongs ChiTietHopDongThue[]
+}
+
+model QuyDinh {
+  idQuyDinh  Int         @id @default(autoincrement())
+  idQLQD     Int
+  noiDung    String
+  
+  quanLy     NhanVien    @relation(fields: [idQLQD], references: [idNhanVien])
+  ctQuyDinhs CtQuyDinh[]
+}
+
+model CtQuyDinh {
+  idQuyDinh Int
+  idPhong   Int
+  
+  quyDinh   QuyDinh @relation(fields: [idQuyDinh], references: [idQuyDinh])
+  phong     Phong   @relation(fields: [idPhong], references: [idPhong])
+  @@id([idQuyDinh, idPhong])
+}
+
+model DieuKienLuuTru {
+  idDieuKien  Int        @id @default(autoincrement())
+  tenDieuKien String
+  moTa        String?
+  ctLuuTrus   CtLuuTru[]
+}
+
+model CtLuuTru {
+  idDieuKien Int
+  idPhong    Int
+  
+  dieuKien   DieuKienLuuTru @relation(fields: [idDieuKien], references: [idDieuKien])
+  phong      Phong          @relation(fields: [idPhong], references: [idPhong])
+  @@id([idDieuKien, idPhong])
+}
+
+model TtoanDatCoc {
+  idThanhToan Int                 @id @default(autoincrement())
+  tienCoc     Float
+  tienDaTra   Float               @default(0)
+  thoiDiem    DateTime            @default(now())
+  phuongThuc  PhuongThucThanhToan
+  trangThai   TrangThaiThanhToan
+  
+  ttinDatCocs TtinDatCoc[]
+  hoaDons     HoaDonDatCoc[]
+}
+
+model TtinDatCoc {
+  idThanhToan Int
+  idKhachHang Int
+  idGiuong    Int
+  
+  ttoan       TtoanDatCoc @relation(fields: [idThanhToan], references: [idThanhToan])
+  khachHang   KhachHang   @relation(fields: [idKhachHang], references: [idKhachHang])
+  giuong      Giuong      @relation(fields: [idGiuong], references: [idGiuong])
+  
+  @@id([idThanhToan, idKhachHang, idGiuong])
+}
+
+// Base HoaDon. Các loại hóa đơn cụ thể (Cọc, Định kỳ) sẽ liên kết 1-1 với bảng này
+model HoaDon {
+  idHoaDon    Int           @id @default(autoincrement())
+  anhHoaDon   String?
+  tienDaTra   Float
+  chungTu     String?
+  anhGiaoDich String?
+  
+  hdDatCoc    HoaDonDatCoc?
+  hdDinhKy    HoaDonDinhKy?
+  hdCoc       HoaDonCoc?
+}
+
+model HoaDonDatCoc {
+  idHoaDon    Int         @id
+  idThanhToan Int
+  
+  hoaDon      HoaDon      @relation(fields: [idHoaDon], references: [idHoaDon])
+  ttoanDatCoc TtoanDatCoc @relation(fields: [idThanhToan], references: [idThanhToan])
+}
+
+model HopDongThue {
+  idHopDong   Int           @id @default(autoincrement())
+  idPhieu     Int
+  hinhThuc    HinhThucThue
+  ngayLap     DateTime      @default(now())
+  ngayBatDau  DateTime
+  ngayKetThuc DateTime
+  trangThai   String        
+  kyThanhToan String?       
+  
+  phieu       PhieuYeuCau   @relation(fields: [idPhieu], references: [idPhieu])
+  chiTiets    ChiTietHopDongThue[]
+  ctDichVus   ChiTietDichVuThue[]
+  ttoanDinhKys TtoanDinhKy[]
+  bienBans    BienBanBanGiao[]
+  kiemTras    BienBanKiemTraPhong[]
+  banGhis     BanGhiChiPhi[]
+  baoCaos     BaoCaoChiPhi[]
+}
+
+model ChiTietHopDongThue {
+  idKhachHang Int
+  idHopDong   Int
+  idGiuong    Int
+  thongTinCT  String?
+  
+  khachHang   KhachHang   @relation(fields: [idKhachHang], references: [idKhachHang])
+  hopDong     HopDongThue @relation(fields: [idHopDong], references: [idHopDong])
+  giuong      Giuong      @relation(fields: [idGiuong], references: [idGiuong])
+  
+  @@id([idKhachHang, idHopDong, idGiuong])
+}
+
+model DichVu {
+  idDichVu  Int                 @id @default(autoincrement())
+  tenDichVu String
+  donGia    Float
+  
+  ctDichVus ChiTietDichVuThue[]
+}
+
+model ChiTietDichVuThue {
+  idDichVu  Int
+  idHopDong Int
+  
+  dichVu    DichVu      @relation(fields: [idDichVu], references: [idDichVu])
+  hopDong   HopDongThue @relation(fields: [idHopDong], references: [idHopDong])
+  @@id([idDichVu, idHopDong])
+}
+
+model TtoanDinhKy {
+  idHopDong     Int
+  thoiGianTT    DateTime
+  tienThanhToan Float
+  tienConThieu  Float               @default(0)
+  kyThanhToan   String?
+  phuongThuc    PhuongThucThanhToan
+  ttBoSung      String?
+  
+  hopDong       HopDongThue         @relation(fields: [idHopDong], references: [idHopDong])
+  hoaDons       HoaDonDinhKy[]
+  
+  @@id([idHopDong, thoiGianTT]) 
+}
+
+model HoaDonDinhKy {
+  idHoaDon    Int         @id
+  idHopDong   Int
+  thoiGianTT  DateTime
+  
+  hoaDon      HoaDon      @relation(fields: [idHoaDon], references: [idHoaDon])
+  ttoanDinhKy TtoanDinhKy @relation(fields: [idHopDong, thoiGianTT], references: [idHopDong, thoiGianTT])
+}
+
+model TaiSan {
+  idTaiSan    Int             @id @default(autoincrement())
+  tenTaiSan   String
+  loaiTaiSan  String
+  ngayMua     DateTime?
+  tinhTrang   String
+  giaMua      Float?
+  
+  quanLyTS    QuanLyTaiSan[]
+  ctBanGiaos  ChiTietBanGiao[]
+}
+
+model QuanLyTaiSan {
+  idTaiSan Int
+  idPhong  Int
+  ghiChu   String?
+  
+  taiSan   TaiSan @relation(fields: [idTaiSan], references: [idTaiSan])
+  phong    Phong  @relation(fields: [idPhong], references: [idPhong])
+  @@id([idTaiSan, idPhong])
+}
+
+model BienBanBanGiao {
+  idBienBan Int              @id @default(autoincrement())
+  idHopDong Int
+  ngayLap   DateTime         @default(now())
+  noiDung   String?
+  trangThai String?
+  
+  hopDong   HopDongThue      @relation(fields: [idHopDong], references: [idHopDong])
+  chiTiets  ChiTietBanGiao[]
+}
+
+model ChiTietBanGiao {
+  idBienBan  Int
+  idTaiSan   Int
+  tinhTrang  String
+  hdSuDung   String?
+  
+  bienBan    BienBanBanGiao @relation(fields: [idBienBan], references: [idBienBan])
+  taiSan     TaiSan         @relation(fields: [idTaiSan], references: [idTaiSan])
+  @@id([idBienBan, idTaiSan])
+}
+
+model BienBanKiemTraPhong {
+  idKiemTra      Int         @id @default(autoincrement())
+  idNguoiKiemTra Int
+  idPhong        Int
+  idHopDong      Int
+  tenBienBan     String
+  ngayKiemTra    DateTime    @default(now())
+  tinhTrang      String
+  noiDung        String?
+  
+  nguoiKiemTra   NhanVien    @relation(fields: [idNguoiKiemTra], references: [idNhanVien])
+  phong          Phong       @relation(fields: [idPhong], references: [idPhong])
+  hopDong        HopDongThue @relation(fields: [idHopDong], references: [idHopDong])
+}
+
+model BanGhiChiPhi {
+  idBanGhiCP  Int         @id @default(autoincrement())
+  idHopDong   Int
+  idKhachHang Int
+  ngayKiemTra DateTime    @default(now())
+  tienCanTra  Float
+  noiDung     String?
+  
+  hopDong     HopDongThue @relation(fields: [idHopDong], references: [idHopDong])
+  khachHang   KhachHang   @relation(fields: [idKhachHang], references: [idKhachHang])
+  phieuGhis   PhieuGhiCocKhachHang[]
+}
+
+model BaoCaoChiPhi {
+  idBaoCao   Int         @id @default(autoincrement())
+  idHopDong  Int
+  soTien     Float
+  noHayHoan  String      // "NO" (nợ) hoặc "HOAN" (hoàn cọc) theo yêu cầu
+  
+  hopDong    HopDongThue @relation(fields: [idHopDong], references: [idHopDong])
+  hoaDons    HoaDonCoc[]
+}
+
+model PhieuGhiCocKhachHang {
+  idPhieuGhi Int             @id @default(autoincrement())
+  idBanGhiCP Int
+  tienThucTe Float
+  loaiPhieu  LoaiPhieuGhiCoc @default(THONG_THUONG)
+  
+  banGhiCP   BanGhiChiPhi    @relation(fields: [idBanGhiCP], references: [idBanGhiCP])
+}
+
+model HoaDonCoc {
+  idHoaDon  Int          @id
+  idBaoCao  Int
+  
+  hoaDon    HoaDon       @relation(fields: [idHoaDon], references: [idHoaDon])
+  baoCao    BaoCaoChiPhi @relation(fields: [idBaoCao], references: [idBaoCao])
+}
