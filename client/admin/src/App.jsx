@@ -18,6 +18,8 @@ import Record from './pages/record/Record';
 import RecordRegister from './pages/record/RecordRegister';
 import Residency from './pages/residency/Residency';
 
+import ProtectedRoute from './components/ProtectedRoute';
+
 function App() {
   return (
     <Router>
@@ -27,18 +29,21 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* Main Routes */}
-        <Route path="/" element={<Homepage />} />
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          {/* Main Routes */}
+          <Route path="/" element={<Homepage />} />
 
-        {/* Admin Features */}
-        <Route path="/appointment" element={<Appointment />} />
-        <Route path="/appointment/register" element={<AppointmentRegister />} />
-        <Route path="/deposit" element={<Deposit />} />
-        <Route path="/handover" element={<Handover />} />
-        <Route path="/handover/register" element={<HandoverRegister />} />
-        <Route path="/record" element={<Record />} />
-        <Route path="/record/register" element={<RecordRegister />} />
-        <Route path="/residency" element={<Residency />} />
+          {/* Admin Features */}
+          <Route path="/appointment" element={<Appointment />} />
+          <Route path="/appointment/register" element={<AppointmentRegister />} />
+          <Route path="/deposit" element={<Deposit />} />
+          <Route path="/handover" element={<Handover />} />
+          <Route path="/handover/register" element={<HandoverRegister />} />
+          <Route path="/record" element={<Record />} />
+          <Route path="/record/register" element={<RecordRegister />} />
+          <Route path="/residency" element={<Residency />} />
+        </Route>
       </Routes>
     </Router>
   );

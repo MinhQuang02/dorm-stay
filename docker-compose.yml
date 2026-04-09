@@ -13,6 +13,10 @@ services:
       - /app/node_modules
     environment:
       - PORT=5000
+      - DATABASE_URL=postgres://74ea8b0743c25f4e24944c1a3bb8fe324417806a33888177ce0bbe6a6d89c7f2:sk_CMdm6TB0q3EPUobADMjAG@db.prisma.io:5432/postgres?sslmode=require
+      - JWT_SECRET=secret123
+      - ADMIN_EMAIL=admin@dormstay.com
+      - ADMIN_PASSWORD=admin123
     command: npm run dev
     restart: always
 

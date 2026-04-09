@@ -35,6 +35,8 @@ import DepositOutSuccess from './pages/deposit-out/DepositOutSuccess';
 // Request Page
 import Request from './pages/request/Request';
 
+import ProtectedRoute from './components/ProtectedRoute';
+
 function App() {
   return (
     <Router>
@@ -44,8 +46,10 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* Main Routes */}
-        <Route path="/" element={<Homepage />} />
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          {/* Main Routes */}
+          <Route path="/" element={<Homepage />} />
 
         {/* Register/Find Room Routes */}
         <Route path="/register-form" element={<RegistrationForm />} />
@@ -73,6 +77,7 @@ function App() {
 
         {/* Request Routes */}
         <Route path="/request" element={<Request />} />
+        </Route>
       </Routes>
     </Router>
   );

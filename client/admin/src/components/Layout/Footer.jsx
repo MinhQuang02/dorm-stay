@@ -20,7 +20,7 @@ export default function Footer() {
             <h3 className="text-[#647696] font-bold text-sm mb-4">Account</h3>
             <ul className="space-y-3">
               <li><a href="mailto:mphanquang06@gmail.com" className="text-[13px] text-gray-700 font-medium hover:text-[#cc6b34]">Profile</a></li>
-              <li><Link to="/login" className="text-[13px] text-gray-700 font-medium hover:text-[#cc6b34]">Log out</Link></li>
+              <li><span onClick={() => { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/login'; }} className="text-[13px] text-gray-700 font-medium hover:text-[#cc6b34] cursor-pointer">Log out</span></li>
             </ul>
           </div>
           <div>
