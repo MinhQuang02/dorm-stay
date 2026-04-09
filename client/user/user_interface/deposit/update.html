@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Tenant Information</title>
+    <link rel="icon" type="image/svg+xml" href="../logo-icon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f5; 
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen w-full">
+
+    <div class="w-[calc(100%-210px)] max-w-[1600px] bg-[#fafaf9] shadow-2xl relative flex flex-col min-h-screen pb-10">
+        
+        <header class="sticky top-0 z-50 bg-[#faeddb] rounded-b-3xl px-6 md:px-12 py-4 grid grid-cols-[auto_1fr_auto] items-center shadow-sm transition-all">
+            <div class="flex-shrink-0">
+                <a href="../homepage.html">
+                    <img src="../logo.svg" alt="Logo" class="h-10 md:h-12 object-contain" onerror="this.src='https://placehold.co/100x40?text=Logo'">
+                </a>
+            </div>
+
+            <h1 class="hidden md:block text-center text-[#cc6b34] font-['Playfair_Display'] text-3xl font-bold tracking-wide translate-x-[40px]">
+                Update Tenant Information
+            </h1>
+
+            <div class="flex items-center gap-6 justify-end">
+                <a href="mailto:mphanquang06@gmail.com" class="text-sm font-medium text-gray-600 hover:text-[#cc6b34] transition-colors hidden sm:block">Contact us</a>
+                <button onclick="location.href='../login.html'" class="bg-[#cc6b34] text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-[#b55e2d] transition-colors">
+                    mphanquang
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 px-6 md:px-12 mt-10 flex justify-center">
+            
+            <div class="w-full max-w-[900px] bg-white rounded-2xl shadow-sm border border-gray-200 p-8 md:p-10">
+                
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-1">Update Rental Information</h2>
+                    <p class="text-[13px] text-gray-400">Modify your booking details before deposit payment</p>
+                </div>
+
+                <hr class="border-gray-200 mb-6">
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div>
+                        <h4 class="text-[13px] font-bold text-gray-900 mb-0.5">Room</h4>
+                        <p class="text-[13px] text-gray-500">Private Room - A101</p>
+                    </div>
+                    <div>
+                        <h4 class="text-[13px] font-bold text-gray-900 mb-0.5">Check-in Date</h4>
+                        <p class="text-[13px] text-gray-500">20 August 2026</p>
+                    </div>
+                    <div>
+                        <h4 class="text-[13px] font-bold text-gray-900 mb-0.5">Price</h4>
+                        <p class="text-[13px] text-gray-500">$250 / month</p>
+                    </div>
+                </div>
+
+                <hr class="border-gray-200 mb-8">
+
+                <div class="space-y-6">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[12px] font-semibold text-gray-700">Room / Bed</label>
+                            <input type="text" placeholder="Enter new room or bed" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] text-gray-800 focus:outline-none focus:border-[#cc6b34] focus:ring-1 focus:ring-[#cc6b34]">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[12px] font-semibold text-gray-700">Check-in Date</label>
+                            <div class="relative">
+                                <input type="text" placeholder="mm/dd/yyyy" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] text-gray-800 focus:outline-none focus:border-[#cc6b34] focus:ring-1 focus:ring-[#cc6b34]">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 absolute right-3 top-2.5 text-gray-500">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[12px] font-semibold text-gray-700">Rental Duration (months)</label>
+                            <input type="text" placeholder="e.g. 6" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] text-gray-800 focus:outline-none focus:border-[#cc6b34] focus:ring-1 focus:ring-[#cc6b34]">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[12px] font-semibold text-gray-700">Price</label>
+                            <input type="text" placeholder="$" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] text-gray-800 focus:outline-none focus:border-[#cc6b34] focus:ring-1 focus:ring-[#cc6b34]">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[12px] font-semibold text-gray-700">Room / Bed</label>
+                            <input type="text" placeholder="Enter new room or bed" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] text-gray-800 focus:outline-none focus:border-[#cc6b34] focus:ring-1 focus:ring-[#cc6b34]">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[12px] font-semibold text-gray-700">Check-in Date</label>
+                            <div class="relative">
+                                <input type="text" placeholder="mm/dd/yyyy" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] text-gray-800 focus:outline-none focus:border-[#cc6b34] focus:ring-1 focus:ring-[#cc6b34]">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 absolute right-3 top-2.5 text-gray-500">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[12px] font-semibold text-gray-700">Rental Duration (months)</label>
+                            <input type="text" placeholder="e.g. 6" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] text-gray-800 focus:outline-none focus:border-[#cc6b34] focus:ring-1 focus:ring-[#cc6b34]">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[12px] font-semibold text-gray-700">Price</label>
+                            <input type="text" placeholder="$" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] text-gray-800 focus:outline-none focus:border-[#cc6b34] focus:ring-1 focus:ring-[#cc6b34]">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[12px] font-semibold text-gray-700">Room / Bed</label>
+                            <input type="text" placeholder="Enter new room or bed" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] text-gray-800 focus:outline-none focus:border-[#cc6b34] focus:ring-1 focus:ring-[#cc6b34]">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[12px] font-semibold text-gray-700">Check-in Date</label>
+                            <div class="relative">
+                                <input type="text" placeholder="mm/dd/yyyy" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] text-gray-800 focus:outline-none focus:border-[#cc6b34] focus:ring-1 focus:ring-[#cc6b34]">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 absolute right-3 top-2.5 text-gray-500">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[12px] font-semibold text-gray-700">Rental Duration (months)</label>
+                            <input type="text" placeholder="e.g. 6" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] text-gray-800 focus:outline-none focus:border-[#cc6b34] focus:ring-1 focus:ring-[#cc6b34]">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[12px] font-semibold text-gray-700">Price</label>
+                            <input type="text" placeholder="$" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] text-gray-800 focus:outline-none focus:border-[#cc6b34] focus:ring-1 focus:ring-[#cc6b34]">
+                        </div>
+                    </div>
+
+                </div>
+
+                <hr class="border-gray-200 mt-8 mb-6">
+
+                <div class="flex items-center gap-3">
+                    <button onclick="location.href='deposit.html'" class="bg-[#cc6b34] hover:bg-[#b55e2d] text-white text-[13px] font-medium px-6 py-2.5 rounded-lg transition-colors shadow-sm shadow-[#cc6b34]/20">
+                        Submit Update
+                    </button>
+                    <button onclick="location.href='deposit.html'" class="bg-[#e5e7eb] hover:bg-[#d1d5db] text-gray-700 text-[13px] font-medium px-6 py-2.5 rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+</body>
+</html>
