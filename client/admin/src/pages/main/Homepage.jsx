@@ -5,28 +5,28 @@ import Footer from '../../components/Layout/Footer';
 const services = [
   {
     img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80',
-    text: '1. Fill out the registration form and perform a room search.',
-    link: '#',
+    text: '1. Schedule a room viewing with registered customers.',
+    link: '/appointment',
   },
   {
     img: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=600&q=80',
-    text: '2. Deposit feature and deposit payment processing.',
-    link: '#',
+    text: '2. Record the residential information of the customers.',
+    link: '/record',
   },
   {
     img: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=600&q=80',
-    text: '3. This feature allows you to make payments for contract fees.',
-    link: '#',
+    text: '3. Review the residential information that the user registered.',
+    link: '/residency',
   },
   {
     img: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=600&q=80',
-    text: '4. Submit a request to leave after the contract expires.',
-    link: '#',
+    text: '4. The staff confirmed the exact payment deadline.',
+    link: '/deposit',
   },
   {
     img: 'https://images.unsplash.com/photo-1604328698692-f76ea9498e76?auto=format&fit=crop&w=600&q=80',
-    text: '5. Pay or debit the amounts related to the deposit.',
-    link: '#',
+    text: '5. Update and store information about the room transfer process.',
+    link: '/handover',
   },
   {
     img: 'https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=600&q=80',

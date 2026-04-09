@@ -7,12 +7,18 @@ export default function Signup() {
       image="https://i.postimg.cc/Cx796ds6/DSC-3743-scaled.jpg"
       imageAlt="Hostel Room"
       imagePos="left"
-      maxH="h-[88vh] max-h-[750px]"
+      maxH="h-[90vh] max-h-[780px]"
     >
-      <div className="w-full max-w-md mx-auto py-8">
-        <h1 className="text-[32px] font-bold text-[#1a1f2c] mb-8">Sign up</h1>
+      <div className="w-full max-w-md mx-auto pt-16 pb-12">
+        <h1 className="text-[32px] font-bold text-[#1a1f2c] mb-6 leading-tight">Sign up</h1>
 
           <form className="space-y-4">
+            <div>
+              <label className="block text-[13px] text-gray-500 mb-1.5">Username</label>
+              <input type="text" placeholder="Enter your username"
+                className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-[14px] text-gray-700 outline-none focus:border-[#d47435] focus:ring-1 focus:ring-[#d47435] transition-all" />
+            </div>
+
             <div>
               <label className="block text-[13px] text-gray-500 mb-1.5">E-mail</label>
               <input type="email" placeholder="Enter your email"

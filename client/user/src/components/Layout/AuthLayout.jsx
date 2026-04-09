@@ -1,4 +1,4 @@
-export default function AuthLayout({ children, image, imageAlt, imagePos = "right", maxH = "h-[85vh] max-h-[700px]" }) {
+export default function AuthLayout({ children, image, imageAlt, imagePos = "right", maxH = "h-[85vh] max-h-[700px]", noScroll = false }) {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 overflow-hidden bg-[#e2e8f0]" style={{ fontFamily: "'Inter', sans-serif" }}>
       <div className={`w-full max-w-[1000px] ${maxH} bg-[#f8fafd] flex shadow-2xl rounded-2xl overflow-hidden`}>
@@ -8,7 +8,7 @@ export default function AuthLayout({ children, image, imageAlt, imagePos = "righ
           </div>
         )}
 
-        <div className="w-full md:w-1/2 flex flex-col justify-center p-8 lg:p-14 relative overflow-y-auto">
+        <div className={`w-full md:w-1/2 flex flex-col items-center ${noScroll ? 'justify-center' : 'justify-start pt-12'} p-8 lg:p-14 relative ${noScroll ? 'overflow-hidden' : 'overflow-y-auto scroll-smooth custom-scrollbar'}`}>
           {children}
         </div>
 

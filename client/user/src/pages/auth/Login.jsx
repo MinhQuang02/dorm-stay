@@ -7,10 +7,11 @@ export default function Login() {
       image="https://i.postimg.cc/LX6wpSvw/DSCF3161-scaled.jpg"
       imageAlt="Hostel Room"
       imagePos="right"
+      noScroll={true}
     >
-      <div className="w-full max-w-md">
-        <h1 className="text-[32px] font-bold text-[#1a1f2c] mb-2">Sign in</h1>
-        <p className="text-[14px] text-gray-500 mb-8">
+      <div className="w-full max-w-md mx-auto">
+        <h1 className="text-[32px] font-bold text-[#1a1f2c] mb-1">Sign in</h1>
+        <p className="text-[14px] text-gray-500 mb-6">
           Don't have an account?{' '}
           <Link to="/signup" className="text-[#d47435] font-medium hover:underline">Create now</Link>
         </p>
