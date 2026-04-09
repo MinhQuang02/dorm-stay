@@ -13,23 +13,45 @@ services:
       - /app/node_modules
     environment:
       - PORT=5000
+      - DATABASE_URL=postgres://74ea8b0743c25f4e24944c1a3bb8fe324417806a33888177ce0bbe6a6d89c7f2:sk_CMdm6TB0q3EPUobADMjAG@db.prisma.io:5432/postgres?sslmode=require
+      - JWT_SECRET=secret123
+      - ADMIN_EMAIL=admin@dormstay.com
+      - ADMIN_PASSWORD=admin123
     command: npm run dev
     restart: always
 
-  client:
+  client-user:
     build:
-      context: ./client
+      context: ./client/user
       dockerfile: Dockerfile
-    container_name: dormstay-client
+    container_name: dormstay-client-user
     ports:
       - '5173:5173'
     volumes:
-      - ./client:/app
+      - ./client/user:/app
       - /app/node_modules
-    command: npm run dev -- --host
+    command: npm run dev -- --host --port 5173
     environment:
       - CHOKIDAR_USEPOLLING=true
       - VITE_PORT=5173
+    depends_on:
+      - server
+    restart: always
+
+  client-admin:
+    build:
+      context: ./client/admin
+      dockerfile: Dockerfile
+    container_name: dormstay-client-admin
+    ports:
+      - '5174:5174'
+    volumes:
+      - ./client/admin:/app
+      - /app/node_modules
+    command: npm run dev -- --host --port 5174
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_PORT=5174
     depends_on:
       - server
     restart: always

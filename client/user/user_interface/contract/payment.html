@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contract Payment</title>
+    <link rel="icon" type="image/svg+xml" href="../logo-icon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f5; 
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen w-full">
+
+    <div class="w-[calc(100%-210px)] max-w-[1600px] bg-[#fafaf9] shadow-2xl relative flex flex-col min-h-screen">
+        
+        <header class="sticky top-0 z-50 bg-[#faeddb] rounded-b-3xl px-6 md:px-12 py-4 grid grid-cols-[auto_1fr_auto] items-center shadow-sm transition-all">
+            <div class="flex-shrink-0">
+                <a href="../homepage.html">
+                    <img src="../logo.svg" alt="Logo" class="h-10 md:h-12 object-contain" onerror="this.src='https://placehold.co/100x40?text=Logo'">
+                </a>
+            </div>
+
+            <h1 class="hidden md:block text-center text-[#cc6b34] font-['Playfair_Display'] text-3xl font-bold tracking-wide translate-x-[40px]">
+                Contract Payment
+            </h1>
+
+            <div class="flex items-center gap-6 justify-end">
+                <a href="mailto:mphanquang06@gmail.com" class="text-sm font-medium text-gray-600 hover:text-[#cc6b34] transition-colors hidden sm:block">Contact us</a>
+                <button onclick="location.href='../login.html'" class="bg-[#cc6b34] text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-[#b55e2d] transition-colors">
+                    mphanquang
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 px-8 md:px-16 py-12">
+            <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+                
+                <div class="flex flex-col">
+                    <h2 class="text-xl font-bold text-black mb-4">Contract Payment</h2>
+                    <hr class="border-gray-300 mb-8">
+
+                    <div class="mb-6">
+                        <p class="font-bold text-black mb-4">Pay With:</p>
+                        <div class="flex gap-6 items-center">
+                            <label class="flex items-center gap-2 text-sm text-gray-400 cursor-not-allowed">
+                                <input type="radio" name="pay_method" disabled> Transfer
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-400 cursor-not-allowed">
+                                <input type="radio" name="pay_method" disabled> Card
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-black font-bold cursor-pointer">
+                                <input type="radio" name="pay_method" checked> Bank
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col items-center justify-center mt-4">
+                        <div class="flex items-center gap-8">
+                            <div class="p-2 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=ContractPayment" alt="QR Code" class="w-32 h-32">
+                            </div>
+                            
+                            <div class="text-gray-400 text-sm">
+                                <p>Transfer 4.300.000đ to:</p>
+                                <p class="text-black font-bold text-base mt-1">Vietcombank</p>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-black font-bold text-lg">0123456781</p>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 cursor-pointer hover:text-[#cc6b34]">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-gray-400 mt-10">Expires in <span class="text-red-500 font-bold">10:00</span> minutes</p>
+
+                        <button onclick="location.href='success.html'" class="w-full bg-[#cc6b34] text-white font-bold py-3 px-6 rounded-lg mt-6 hover:bg-[#b55e2d] transition-all shadow-md">
+                            Confirm Payment
+                        </button>
+
+                        <p class="text-[11px] text-gray-400 mt-6 leading-relaxed text-center">
+                            Your personal data will be used to process your order, support your experience throughout this website, and for other purposes described in our privacy policy.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col border-l border-gray-200 pl-0 lg:pl-16">
+                    <h2 class="text-xl font-bold text-black mb-8">Contract Summary</h2>
+                    
+                    <div class="space-y-8">
+                        <div class="flex justify-between items-start">
+                            <div class="max-w-[70%]">
+                                <p class="font-bold text-black text-[15px]">1. Periodic Rent</p>
+                                <p class="text-xs text-gray-400 mt-1">The recurring monthly payment as per the contract.</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-black text-[15px]">2.000.000đ</p>
+                                <p class="text-[10px] text-gray-400">5/1-5/2</p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-start">
+                            <div class="max-w-[70%]">
+                                <p class="font-bold text-black text-[15px]">2. Electricity Bill</p>
+                                <p class="text-xs text-gray-400 mt-1">Monthly electricity bill details as stated in the contract.</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-black text-[15px]">200.000đ</p>
+                                <p class="text-[10px] text-gray-400">5/12-5/2</p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-start">
+                            <div class="max-w-[70%]">
+                                <p class="font-bold text-black text-[15px]">3. Water Fee</p>
+                                <p class="text-xs text-gray-400 mt-1">Monthly water bills as detailed in the contract.</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-black text-[15px]">300.000đ</p>
+                                <p class="text-[10px] text-gray-400">5/1-5/2</p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-start">
+                            <div class="max-w-[70%]">
+                                <p class="font-bold text-black text-[15px]">4. Parking fee</p>
+                                <p class="text-xs text-gray-400 mt-1">Monthly parking fees are as detailed in the contract.</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-black text-[15px]">500.000đ</p>
+                                <p class="text-[10px] text-gray-400">4/1-5/2</p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-start">
+                            <div class="max-w-[70%]">
+                                <p class="font-bold text-black text-[15px]">5. Service fee</p>
+                                <p class="text-xs text-gray-400 mt-1">Monthly service fees are as detailed in the contract.</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-black text-[15px]">500.000đ</p>
+                                <p class="text-[10px] text-gray-400">5/1-5/2</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-300 mt-12 mb-6">
+                    <div class="flex justify-between items-center">
+                        <p class="text-sm font-bold text-black">Total</p>
+                        <p class="text-3xl font-bold text-black">3.500.000đ</p>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+        
+    </div>
+
+</body>
+</html>
