@@ -12,7 +12,6 @@ async function main() {
       taiKhoan: 'admin',
       matKhau: '$2b$10$Ep...Hash...Sample', // Thường là hash password bằng bcrypt
       email: 'admin@dormstay.local',
-      ngaySinh: new Date('1990-01-01'),
     },
   });
   console.log(`Đã tạo tài khoản: ${taiKhoanAdmin.taiKhoan}`);
@@ -89,6 +88,7 @@ async function main() {
       gioiTinh: 'Nam',
       cccd: '001203099888',
       quocTich: 'Việt Nam',
+      ngaySinh: new Date('1990-01-01'),
       idTaiKhoan: taiKhoanAdmin.idTaiKhoan,
     },
   });

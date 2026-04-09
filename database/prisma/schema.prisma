@@ -55,7 +55,6 @@ model TaiKhoan {
   taiKhoan     String        @unique
   matKhau      String
   email        String        @unique
-  ngaySinh     DateTime?
   
   // Quan hệ 1-1 với KhachHang (Tài khoản có thể chưa liên kết khách hàng)
   khachHang    KhachHang?
@@ -74,6 +73,7 @@ model KhachHang {
   sdt            String
   email          String?
   gioiTinh       String?
+  ngaySinh       DateTime?
   cccd           String        @unique
   quocTich       String?
   minhChungTC    String?
