@@ -136,6 +136,7 @@ model NhanVien {
   phongs     Phong[]
   quyDinhs   QuyDinh[]
   kiemTras   BienBanKiemTraPhong[]
+  hopDongs   HopDongThue[]
 }
 
 model LichXemPhong {
@@ -267,7 +268,9 @@ model HopDongThue {
   ngayKetThuc DateTime
   trangThai   String        
   kyThanhToan String?       
+  idNguoiLap  Int
   
+  nguoiLap    NhanVien      @relation(fields: [idNguoiLap], references: [idNhanVien])
   phieu       PhieuYeuCau   @relation(fields: [idPhieu], references: [idPhieu])
   chiTiets    ChiTietHopDongThue[]
   ctDichVus   ChiTietDichVuThue[]
