@@ -1,14 +1,46 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import MainLayout from '../../components/Layout/MainLayout';
 
 export default function DepositOutDebt() {
-  const summaryItems = [
-    { title: '1. Deposit Payment', desc: 'The money received from the termination...', amount: '10.000.000đ', type: 'REFUND' },
-    { title: '2. Deposit Detection', desc: 'The money received from the termination...', amount: '-3.000.000đ', type: 'REFUND' },
-    { title: '3. Water Debt', desc: 'The money received from the termination...', amount: '-200.000đ', type: 'REFUND' },
-    { title: '4. Electricity Debt', desc: 'The money received from the termination...', amount: '-500.000đ', type: 'REFUND' },
-    { title: '5. Propyty Damage', desc: 'The money received from the termination...', amount: '-2.000.000đ', type: 'REFUND' },
-  ];
+  const navigate = useNavigate();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const cached = sessionStorage.getItem('depositOutData');
+    if (cached) setData(JSON.parse(cached));
+    else navigate('/deposit-out');
+  }, [navigate]);
+
+  const handleFinalize = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('http://localhost:5000/api/finance/deposit-out/finalize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId: data.customerId,
+          contractId: data.contractId,
+          bedId: data.bedId,
+          finalBalance: data.finalBalance,
+          isDebt: data.isDebt
+        })
+      });
+      const response = await res.json();
+      if(response.success) {
+        sessionStorage.setItem('depositOutInvoice', JSON.stringify(response.invoice));
+        navigate('/deposit-out/success');
+      } else alert("Failed to process payment data.");
+    } catch (e) {
+      console.error(e);
+      alert("Error contacting server");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if(!data) return null;
 
   return (
     <MainLayout title="Deposit Payment" mainClassName="flex-1 px-8 md:px-20 py-16 flex justify-center">
@@ -36,7 +68,7 @@ export default function DepositOutDebt() {
                   <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=NinthDormstay" alt="QR Code" className="w-full h-full" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-[11px] text-gray-400 mb-2">Transfer 4.300.000đ to:</p>
+                  <p className="text-[11px] text-gray-400 mb-2">Transfer {data.finalBalance.toLocaleString('vi-VN')}đ to:</p>
                   <p className="text-[14px] font-bold text-gray-800">Vietcombank</p>
                   <div className="flex items-center gap-2">
                     <p className="text-[18px] font-bold text-gray-900 tracking-tight">0123456781</p>
@@ -54,9 +86,9 @@ export default function DepositOutDebt() {
             </div>
 
             <div className="pt-2">
-              <Link to="/deposit-out/success" className="w-full bg-[#ce713b] text-white font-bold text-[13px] py-4 rounded-md shadow-md hover:bg-[#b55e2d] block text-center">
-                Confirm Payment
-              </Link>
+              <button disabled={loading} onClick={handleFinalize} className="w-full bg-[#ce713b] text-white font-bold text-[13px] py-4 rounded-md shadow-md hover:bg-[#b55e2d] block text-center disabled:bg-gray-400">
+                {loading ? 'Confirming...' : 'Confirm Payment'}
+              </button>
               <p className="text-[11px] text-gray-400 mt-6 leading-relaxed">
                 Your personal data will be used to process your order, support your experience throughout this website, and for other purposes described in our privacy policy.
               </p>
@@ -68,22 +100,60 @@ export default function DepositOutDebt() {
         <div className="border-l border-gray-200 pl-0 lg:pl-20">
           <h2 className="text-xl font-bold text-gray-900 mb-10">Deposit Summary</h2>
           <div className="space-y-8">
-            {summaryItems.map((item, i) => (
-              <div key={i} className="flex justify-between items-start">
-                <div>
-                  <p className="text-[13px] font-bold text-gray-800">{item.title}</p>
-                  <p className="text-[11px] text-gray-400 mt-1">{item.desc}</p>
+            <div className="flex justify-between items-start">
+              <div className="max-w-[70%]">
+                <p className="text-[13px] font-bold text-gray-800">1. Deposit Payment</p>
+                <p className="text-[11px] text-gray-400 mt-1">The money received from the termination of the contract</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[13px] font-bold text-gray-800">{data.initialDeposit.toLocaleString('vi-VN')}đ</p>
+                <p className="text-[10px] text-gray-400 uppercase font-bold mt-1">REFUND</p>
+              </div>
+            </div>
+            
+            {data.breachFee > 0 && (
+              <div className="flex justify-between items-start">
+                <div className="max-w-[70%]">
+                  <p className="text-[13px] font-bold text-gray-800">2. Deposit Deduction</p>
+                  <p className="text-[11px] text-gray-400 mt-1">{data.reason}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[13px] font-bold text-gray-800">{item.amount}</p>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">{item.type}</p>
+                  <p className="text-[13px] font-bold text-red-500">-{data.breachFee.toLocaleString('vi-VN')}đ</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-bold mt-1">DEDUCTION</p>
                 </div>
               </div>
-            ))}
+            )}
+            
+            {data.unpaidBills > 0 && (
+              <div className="flex justify-between items-start">
+                <div className="max-w-[70%]">
+                  <p className="text-[13px] font-bold text-gray-800">3. Unpaid Bills</p>
+                  <p className="text-[11px] text-gray-400 mt-1">Periodic debt</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[13px] font-bold text-red-500">-{data.unpaidBills.toLocaleString('vi-VN')}đ</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-bold mt-1">DEDUCTION</p>
+                </div>
+              </div>
+            )}
+            
+            {data.damageCosts > 0 && (
+              <div className="flex justify-between items-start">
+                <div className="max-w-[70%]">
+                  <p className="text-[13px] font-bold text-gray-800">4. Property Damage</p>
+                  <p className="text-[11px] text-gray-400 mt-1">Costs assessed from inspection</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[13px] font-bold text-red-500">-{data.damageCosts.toLocaleString('vi-VN')}đ</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-bold mt-1">DEDUCTION</p>
+                </div>
+              </div>
+            )}
+            
             <hr className="border-gray-200 my-8" />
             <div className="flex justify-between items-end">
-              <p className="text-[13px] font-bold text-gray-800">Total</p>
-              <p className="text-4xl font-bold text-gray-900 tracking-tight">4.300.000đ</p>
+              <p className="text-[13px] font-bold text-gray-800">Total Debt</p>
+              <p className="text-4xl font-bold text-red-600 tracking-tight">{data.finalBalance.toLocaleString('vi-VN')}đ</p>
             </div>
           </div>
         </div>

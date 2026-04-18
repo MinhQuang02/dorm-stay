@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import MainLayout from '../../components/Layout/MainLayout';
 
 const summaryItems = [
@@ -10,6 +11,45 @@ const summaryItems = [
 ];
 
 export default function DepositOutGetDeposit() {
+  const navigate = useNavigate();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const cached = sessionStorage.getItem('depositOutData');
+    if (cached) setData(JSON.parse(cached));
+    else navigate('/deposit-out');
+  }, [navigate]);
+
+  const handleFinalize = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('http://localhost:5000/api/finance/deposit-out/finalize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId: data.customerId,
+          contractId: data.contractId,
+          bedId: data.bedId,
+          finalBalance: data.finalBalance,
+          isDebt: data.isDebt
+        })
+      });
+      const response = await res.json();
+      if(response.success) {
+        sessionStorage.setItem('depositOutInvoice', JSON.stringify(response.invoice));
+        navigate('/deposit-out/success');
+      } else alert("Failed to finalize refund.");
+    } catch (e) {
+      console.error(e);
+      alert("Error contacting server");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if(!data) return null;
+
   return (
     <MainLayout title="Deposit Payment" mainClassName="flex-1 px-8 md:px-20 py-16 flex justify-center">
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-20">
@@ -54,8 +94,8 @@ export default function DepositOutGetDeposit() {
 
             {/* Submit */}
             <div className="pt-6">
-              <button className="w-full bg-[#ce713b] text-white font-bold text-[13px] py-4 rounded-md hover:bg-[#b55e2d] transition-all shadow-md">
-                Get 4.300.000đ
+              <button onClick={handleFinalize} disabled={loading} className="w-full bg-[#ce713b] text-white font-bold text-[13px] py-4 rounded-md hover:bg-[#b55e2d] transition-all shadow-md disabled:bg-gray-400">
+                {loading ? 'Processing...' : `Get ${data.finalBalance.toLocaleString('vi-VN')}đ`}
               </button>
               <p className="text-[11px] text-gray-400 mt-6 leading-relaxed">
                 Your personal data will be used to process your order, support your experience throughout this website, and for other purposes described in our privacy policy.
@@ -68,22 +108,60 @@ export default function DepositOutGetDeposit() {
         <div className="border-l border-gray-200 pl-0 lg:pl-20">
           <h2 className="text-xl font-bold text-gray-900 mb-10">Deposit Summary</h2>
           <div className="space-y-8">
-            {summaryItems.map((item, i) => (
-              <div key={i} className="flex justify-between items-start">
+            <div className="flex justify-between items-start">
+              <div className="max-w-[70%]">
+                <p className="text-[13px] font-bold text-gray-800">1. Deposit Payment</p>
+                <p className="text-[11px] text-gray-400 mt-1">The money received from the termination of the contract</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[13px] font-bold text-gray-800">{data.initialDeposit.toLocaleString('vi-VN')}đ</p>
+                <p className="text-[10px] text-gray-400 uppercase font-bold mt-1">REFUND</p>
+              </div>
+            </div>
+            
+            {data.breachFee > 0 && (
+              <div className="flex justify-between items-start">
                 <div className="max-w-[70%]">
-                  <p className="text-[13px] font-bold text-gray-800">{item.title}</p>
-                  <p className="text-[11px] text-gray-400 mt-1">{item.desc}</p>
+                  <p className="text-[13px] font-bold text-gray-800">2. Deposit Deduction</p>
+                  <p className="text-[11px] text-gray-400 mt-1">{data.reason}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[13px] font-bold text-gray-800">{item.amount}</p>
-                  <p className="text-[10px] text-gray-400 uppercase font-bold mt-1">{item.type}</p>
+                  <p className="text-[13px] font-bold text-red-500">-{data.breachFee.toLocaleString('vi-VN')}đ</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-bold mt-1">DEDUCTION</p>
                 </div>
               </div>
-            ))}
+            )}
+            
+            {data.unpaidBills > 0 && (
+              <div className="flex justify-between items-start">
+                <div className="max-w-[70%]">
+                  <p className="text-[13px] font-bold text-gray-800">3. Unpaid Bills</p>
+                  <p className="text-[11px] text-gray-400 mt-1">Periodic debt</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[13px] font-bold text-red-500">-{data.unpaidBills.toLocaleString('vi-VN')}đ</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-bold mt-1">DEDUCTION</p>
+                </div>
+              </div>
+            )}
+            
+            {data.damageCosts > 0 && (
+              <div className="flex justify-between items-start">
+                <div className="max-w-[70%]">
+                  <p className="text-[13px] font-bold text-gray-800">4. Property Damage</p>
+                  <p className="text-[11px] text-gray-400 mt-1">Costs assessed from inspection</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[13px] font-bold text-red-500">-{data.damageCosts.toLocaleString('vi-VN')}đ</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-bold mt-1">DEDUCTION</p>
+                </div>
+              </div>
+            )}
+            
             <hr className="border-gray-200 my-8" />
             <div className="flex justify-between items-end">
-              <p className="text-[13px] font-bold text-gray-800">Total</p>
-              <p className="text-3xl font-bold text-gray-900">4.300.000đ</p>
+              <p className="text-[13px] font-bold text-gray-800">Total Refund</p>
+              <p className="text-3xl font-bold text-green-600">{data.finalBalance.toLocaleString('vi-VN')}đ</p>
             </div>
           </div>
         </div>
