@@ -5,6 +5,8 @@ const cors = require('cors');
 const authRoutes = require('./src/routes/authRoutes');
 const interactionRoutes = require('./src/routes/interactionRoutes');
 const financeRoutes = require('./src/routes/financeRoutes');
+const bookingRoutes = require('./src/routes/bookingRoutes');
+const appointmentRoutes = require('./src/routes/appointment');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,6 +18,8 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/interaction', interactionRoutes);
 app.use('/api/finance', financeRoutes);
+app.use('/api/booking', bookingRoutes);
+app.use('/api/admin', appointmentRoutes);
 
 app.get('/', (req, res) => {
   res.send('DormStay Backend Running');
