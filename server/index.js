@@ -5,6 +5,7 @@ const cors = require('cors');
 const authRoutes = require('./src/routes/authRoutes');
 const interactionRoutes = require('./src/routes/interactionRoutes');
 const financeRoutes = require('./src/routes/financeRoutes');
+const despostRoutes = require('./src/routes/despostRoutes');
 const bookingRoutes = require('./src/routes/bookingRoutes');
 const appointmentRoutes = require('./src/routes/appointment');
 
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/interaction', interactionRoutes);
 app.use('/api/finance', financeRoutes);
+app.use('/api/deposit', despostRoutes);
 app.use('/api/booking', bookingRoutes);
 app.use('/api/admin', appointmentRoutes);
 
