@@ -126,7 +126,7 @@ export default function RecordResidence() {
                 onChange={(e) => setSelectedContractId(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-[#cf743b] focus:outline-none bg-white text-gray-700"
               >
-                <option value="">-- Chọn mã hợp đồng --</option>
+                <option value="">-- Choose Contract ID --</option>
                 {activeContracts.map(c => (
                   <option key={c.idHopDong} value={c.idHopDong}>
                     #{c.idHopDong} - {c.hinhThuc === 'NGUYEN_PHONG' ? 'Thuê nguyên phòng' : 'Ở ghép'}
