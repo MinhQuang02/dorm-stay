@@ -1,4 +1,4 @@
-# DormStay - Dormitory Management System
+# DormStay - Dormitory Management System - Branch 2
 
 DormStay là một hệ thống quản lý ký túc xá toàn diện được thiết kế để đơn giản hóa quá trình tìm kiếm, đặt phòng và quản lý hợp đồng thuê phòng cho cả người dùng và quản trị viên.
 
