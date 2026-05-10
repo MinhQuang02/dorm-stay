@@ -6,206 +6,206 @@ const API_BASE = "http://localhost:5000/api";
 
 export default function RoomList() {
   const navigate = useNavigate();
+  
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 8;
+  const ITEMS_PER_PAGE = 8; 
 
   useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_BASE}/contracts/rooms`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (data.success) {
+          setRooms(data.data);
+        }
+      } catch (err) {
+        console.error("Lỗi tải danh sách phòng:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchRooms();
   }, []);
 
-  const fetchRooms = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/contracts/rooms`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setRooms(data.data);
-    } catch (err) {
-      console.error("Lỗi tải danh sách phòng:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // 1. Logic LỌC (Search) - Đã bỏ chữ R
+  const filteredRooms = rooms.filter((r) => {
+    const query = search.toLowerCase().trim();
+    return (
+      String(r.idPhong).includes(query) ||
+      r.loaiPhong.toLowerCase().includes(query)
+    );
+  });
 
-  // Filter + sort
-  const filtered = rooms
-    .filter((r) => {
-      const q = search.toLowerCase();
-      return (
-        String(r.idPhong).includes(q) ||
-        r.loaiPhong.toLowerCase().includes(q) ||
-        String(r.idGiuong).includes(q)
-      );
-    })
-    .sort((a, b) => {
-      if (sortBy === "price") return a.giaGiuong - b.giaGiuong;
-      if (sortBy === "status") return Number(b.trangThaiGiuong) - Number(a.trangThaiGiuong);
-      return a.idPhong - b.idPhong;
-    });
+  // 2. Logic SẮP XẾP (Sort)
+  const sortedRooms = [...filteredRooms].sort((a, b) => {
+    if (sortBy === "price") return a.giaGiuong - b.giaGiuong;
+    if (sortBy === "status") return Number(b.trangThaiGiuong) - Number(a.trangThaiGiuong); 
+    return a.idPhong - b.idPhong; 
+  });
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginated = filtered.slice(
+  // 3. Logic PHÂN TRANG (Pagination)
+  const totalPages = Math.ceil(sortedRooms.length / ITEMS_PER_PAGE);
+  const paginatedRooms = sortedRooms.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
+  const getPaginationRange = (current, total) => {
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 3) {
+      return [1, 2, 3, 4, '...', total];
+    }
+    if (current >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total];
+  };
+
+  const paginationRange = getPaginationRange(currentPage, totalPages);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, sortBy]);
+
   const handleRecord = (room) => {
-    navigate("/record-residence", { state: { room } });
+    navigate("/record-residence", { state: { selectedRoom: room } });
   };
 
   const formatPrice = (price) =>
     new Intl.NumberFormat("vi-VN").format(price) + " VNĐ/tháng";
 
   return (
-    <MainLayout title="Record Residence Information">
-      <div className="flex-1 px-6 md:px-12 py-8">
-        {/* Header + Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <h2 className="text-xl font-bold text-gray-700 tracking-wide uppercase">
-            Room List
-          </h2>
-          <div className="flex items-center gap-3">
-            {/* Search */}
-            <div className="relative">
-              <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
-                />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search..."
-                value={search}
-                onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-                className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#cc6b34]/30 bg-white w-48"
-              />
-            </div>
-            {/* Sort */}
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span className="font-medium">Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#cc6b34]/30 bg-white cursor-pointer"
-              >
-                <option value="newest">Newest</option>
-                <option value="price">Price</option>
-                <option value="status">Status</option>
-              </select>
-            </div>
+    <MainLayout title="Room List">
+      <div className="flex-1 px-8 py-10 bg-[#fbfbfa] min-h-screen">
+        
+        <div className="flex justify-end items-center mb-8 gap-4">
+          <div className="relative">
+            <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search room (e.g., 139 or Standard)"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none w-64 text-sm bg-white"
+            />
+          </div>
+          <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm">
+            <span className="text-gray-500 mr-2">Sort by :</span>
+            <select 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value)}
+              className="font-medium outline-none bg-transparent cursor-pointer"
+            >
+              <option value="newest">Newest</option>
+              <option value="price">Price</option>
+              <option value="status">Status</option>
+            </select>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-[#faf5ef] border-b border-gray-100">
-                  <th className="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Room ID</th>
-                  <th className="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Bed ID</th>
-                  <th className="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Room Type</th>
-                  <th className="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Capacity</th>
-                  <th className="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Price</th>
-                  <th className="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Status</th>
-                  <th className="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-12 text-gray-400">
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-5 h-5 border-2 border-[#cc6b34] border-t-transparent rounded-full animate-spin" />
-                        Loading...
-                      </div>
+        <div className="bg-[#fcfcfc] rounded-2xl p-6 shadow-sm">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="text-gray-400 text-sm border-b border-transparent">
+                <th className="font-normal pb-4">Room ID</th>
+                <th className="font-normal pb-4">Room Type</th>
+                <th className="font-normal pb-4 text-center">Capacity</th>
+                <th className="font-normal pb-4">Price</th>
+                <th className="font-normal pb-4">Status</th>
+                <th className="font-normal pb-4 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan="6" className="text-center py-10 text-gray-500">Loading data...</td></tr>
+              ) : paginatedRooms.length === 0 ? (
+                <tr><td colSpan="6" className="text-center py-10 text-gray-500">No rooms found</td></tr>
+              ) : (
+                paginatedRooms.map((room) => (
+                  <tr key={`${room.idPhong}-${room.idGiuong}`} className="border-b border-gray-100/50 last:border-none hover:bg-gray-50/50 transition-colors">
+                    {/* Bỏ chữ R, thêm ID Giường để biết tại sao có nhiều dòng */}
+                    <td className="py-5 font-medium text-gray-800">
+                      {room.idPhong} 
+                      <span className="ml-2 text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded">Bed {room.idGiuong}</span>
+                    </td>
+                    <td className="py-5 text-gray-700">{room.loaiPhong}</td>
+                    <td className="py-5 text-gray-700 text-center">{room.sucChua}</td>
+                    <td className="py-5 text-gray-700">{formatPrice(room.giaGiuong)}</td>
+                    <td className="py-5 text-gray-700">
+                      {room.trangThaiGiuong ? "Available" : "Occupied"}
+                    </td>
+                    <td className="py-5 text-center">
+                      <button
+                        onClick={() => handleRecord(room)}
+                        disabled={!room.trangThaiGiuong}
+                        className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
+                          room.trangThaiGiuong 
+                            ? "bg-[#faedd8] text-[#c07340] hover:bg-[#f1dec1]" 
+                            : "bg-gray-200 text-gray-400 cursor-not-allowed opacity-60"
+                        }`}
+                      >
+                        RECORD
+                      </button>
                     </td>
                   </tr>
-                ) : paginated.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-12 text-gray-400">
-                      No rooms found.
-                    </td>
-                  </tr>
-                ) : (
-                  paginated.map((room, idx) => (
-                    <tr
-                      key={`${room.idPhong}-${room.idGiuong}`}
-                      className={`border-b border-gray-50 hover:bg-[#fdf9f5] transition-colors ${
-                        idx % 2 === 0 ? "bg-white" : "bg-gray-50/40"
-                      }`}
-                    >
-                      <td className="px-5 py-3.5 font-medium text-gray-700">#{room.idPhong}</td>
-                      <td className="px-5 py-3.5 text-gray-600">B{room.idGiuong}</td>
-                      <td className="px-5 py-3.5 text-gray-600">{room.loaiPhong}</td>
-                      <td className="px-5 py-3.5 text-gray-600">{room.sucChua}</td>
-                      <td className="px-5 py-3.5 text-gray-600">{formatPrice(room.giaGiuong)}</td>
-                      <td className="px-5 py-3.5">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                            room.trangThaiGiuong
-                              ? "bg-emerald-50 text-emerald-600"
-                              : "bg-red-50 text-red-500"
-                          }`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              room.trangThaiGiuong ? "bg-emerald-500" : "bg-red-400"
-                            }`}
-                          />
-                          {room.trangThaiGiuong ? "Available" : "Occupied"}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <button
-                          onClick={() => handleRecord(room)}
-                          disabled={!room.trangThaiGiuong}
-                          className={`px-4 py-1.5 rounded-lg text-xs font-bold tracking-wide transition-all ${
-                            room.trangThaiGiuong
-                              ? "bg-[#cc6b34] text-white hover:bg-[#b55e2d] shadow-sm hover:shadow-md active:scale-95"
-                              : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          }`}
-                        >
-                          RECORD
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
 
-          {/* Pagination */}
+          {/* Phân trang (Pagination) */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-1.5 py-4 border-t border-gray-50">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${
-                    currentPage === page
-                      ? "bg-[#cc6b34] text-white shadow-sm"
-                      : "text-gray-500 hover:bg-[#faf5ef]"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+            <div className="flex justify-end items-center gap-1.5 mt-8 text-xs font-medium">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="w-6 h-6 flex justify-center items-center text-gray-400 hover:bg-gray-200 rounded transition-colors disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed"
+              >
+                &lt;
+              </button>
+              
+              {paginationRange.map((item, index) => {
+                if (item === '...') {
+                  return (
+                    <span key={`dots-${index}`} className="w-4 h-6 flex justify-center items-end text-gray-400 pb-1.5">
+                      ..
+                    </span>
+                  );
+                }
+                return (
+                  <button
+                    key={item}
+                    onClick={() => setCurrentPage(item)}
+                    className={
+                      currentPage === item 
+                        ? "w-6 h-6 flex justify-center items-center bg-[#d58047] text-white rounded"
+                        : "w-6 h-6 flex justify-center items-center text-gray-500 hover:bg-gray-200 rounded transition-colors cursor-pointer"
+                    }
+                  >
+                    {item}
+                  </button>
+                );
+              })}
+
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="w-6 h-6 flex justify-center items-center text-gray-400 hover:bg-gray-200 rounded transition-colors disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed"
+              >
+                &gt;
+              </button>
             </div>
           )}
         </div>

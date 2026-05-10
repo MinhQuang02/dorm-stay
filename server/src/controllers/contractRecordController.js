@@ -160,35 +160,37 @@ const recordResidence = async (req, res) => {
 
     // Transaction: INSERT ChiTietHopDongThue + UPDATE TrangThai
     const result = await prisma.$transaction(async (tx) => {
+      // 1. Tạo bản ghi chi tiết cư trú
       const chiTiet = await tx.chiTietHopDongThue.create({
         data: {
           idKhachHang: parseInt(idKhachHang),
           idHopDong: parseInt(idHopDong),
-          idGiuong: parseInt(idGiuong),
-          thongTinCT: thongTinCT || null,
+          idGiuong: isFullRoom ? null : parseInt(idGiuong), // Nếu thuê nguyên phòng có thể để null giường hoặc chọn 1 giường đại diện
+          thongTinCT: isFullRoom ? "Thuê nguyên phòng" : "Thuê giường lẻ",
         },
       });
 
-      // Mark the bed as used
-      await tx.giuong.update({
-        where: { idGiuong: parseInt(idGiuong) },
-        data: {
-          trangThai: false,
-          idKhachHang: parseInt(idKhachHang),
-        },
-      });
+      // 2. Cập nhật trạng thái giường
+      if (isFullRoom) {
+        // Nếu thuê nguyên phòng: Khóa TẤT CẢ giường trong phòng đó
+        await tx.giuong.updateMany({
+          where: { idPhong: parseInt(idPhong) },
+          data: { trangThai: false }
+        });
+      } else {
+        // Nếu thuê giường lẻ: Chỉ khóa đúng giường đó
+        await tx.giuong.update({
+          where: { idGiuong: parseInt(idGiuong) },
+          data: { trangThai: false },
+        });
+      }
 
       return chiTiet;
     });
 
-    res.status(201).json({
-      success: true,
-      message: "Ghi nhận cư trú thành công.",
-      data: result,
-    });
+    res.status(201).json({ success: true, data: result });
   } catch (error) {
-    console.error("recordResidence error:", error);
-    res.status(500).json({ success: false, message: "Lỗi server khi ghi nhận cư trú." });
+    res.status(500).json({ success: false, message: "Lỗi ghi nhận cư trú." });
   }
 };
 

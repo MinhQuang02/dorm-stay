@@ -14,8 +14,6 @@ import AppointmentRegister from './pages/appointment/AppointmentRegister';
 import Deposit from './pages/deposit/Deposit';
 import Handover from './pages/handover/Handover';
 import HandoverRegister from './pages/handover/HandoverRegister';
-import Record from './pages/record/Record';
-import RecordRegister from './pages/record/RecordRegister';
 import Residency from './pages/residency/Residency';
 import RoomList from './pages/room-list/RoomList';
 import RecordResidence from './pages/record-residence/RecordResidence';
@@ -42,8 +40,6 @@ function App() {
           <Route path="/deposit" element={<Deposit />} />
           <Route path="/handover" element={<Handover />} />
           <Route path="/handover/register" element={<HandoverRegister />} />
-          <Route path="/record" element={<Record />} />
-          <Route path="/record/register" element={<RecordRegister />} />
           <Route path="/residency" element={<Residency />} />
           <Route path="/rooms" element={<RoomList />} />
           <Route path="/record-residence" element={<RecordResidence />} />

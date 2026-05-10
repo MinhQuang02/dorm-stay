@@ -13,7 +13,7 @@ const services = [
   {
     img: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=600&q=80',
     text: '2. Record the residential information of the customers.',
-    link: '/record',
+    link: '/rooms',
     name: 'Residential Records'
   },
   {
