@@ -17,6 +17,8 @@ import HandoverRegister from './pages/handover/HandoverRegister';
 import Record from './pages/record/Record';
 import RecordRegister from './pages/record/RecordRegister';
 import Residency from './pages/residency/Residency';
+import RoomList from './pages/room-list/RoomList';
+import RecordResidence from './pages/record-residence/RecordResidence';
 
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -43,6 +45,8 @@ function App() {
           <Route path="/record" element={<Record />} />
           <Route path="/record/register" element={<RecordRegister />} />
           <Route path="/residency" element={<Residency />} />
+          <Route path="/rooms" element={<RoomList />} />
+          <Route path="/record-residence" element={<RecordResidence />} />
         </Route>
       </Routes>
     </Router>
