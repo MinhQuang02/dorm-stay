@@ -21,12 +21,15 @@ export default function Deposit() {
   const [rooms, setRooms] = useState([]);
   const [roomsLoading, setRoomsLoading] = useState(false);
 
-  // States cho chọn phòng
+  // State cho chọn phòng
   const [selectedRoom, setSelectedRoom] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('1');
-  const [isAgreed, setIsAgreed] = useState(false);
-  
-  const statusLabel = selectedStatus === '1' ? 'Nguyên căn' : 'Giường trống';
+  const [isAgreed, setIsAgreed] = useState(false); // Checkbox điều khoản
+
+  // State MỚI: Dùng để bật/tắt bảng thông báo thành công
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Biến phụ trợ để lấy thông tin chi tiết của phòng đang được chọn
+  const selectedRoomObj = rooms.find(r => r.idPhong.toString() === selectedRoom);
 
   // Effect 1: Tra cứu thông tin khách hàng (debounce 800ms)
   useEffect(() => {
@@ -130,7 +133,7 @@ export default function Deposit() {
           if (data.success && Array.isArray(data.data)) {
             setRooms(data.data);
             if (data.data.length > 0) {
-              setSelectedRoom(`Phòng ${data.data[0].idPhong} - ${data.data[0].loaiPhong}`);
+              setSelectedRoom(data.data[0].idPhong.toString());
             }
           }
         }
@@ -144,16 +147,24 @@ export default function Deposit() {
     fetchRooms();
   }, []);
 
+  // Hàm xử lý khi bấm nút "PROCEED TO DEPOSIT"
   const handleSubmit = () => {
-    // Thêm logic submit ở đây
-    navigate('/');
+    // Tương lai bro có thể gọi API lưu xuống database ở đây
+    
+    // Hiện bảng thông báo thành công
+    setShowSuccessModal(true);
+  };
+
+  // Hàm xử lý khi bấm nút "Hoàn tất" trong bảng thông báo
+  const handleCloseModal = () => {
+    setShowSuccessModal(false);
+    navigate('/'); // Đá về trang chủ
   };
 
   return (
     <MainLayout title="Deposit Term Confirmation">
-      <div className="flex-1 px-4 md:px-8 py-10 bg-[#fbfbfa] min-h-screen flex flex-col items-center">
+      <div className="flex-1 px-4 md:px-8 py-10 bg-[#fbfbfa] min-h-screen flex flex-col items-center relative">
         
-        {/* KHUNG TRẮNG CHỨA TẤT CẢ (Giống RoomList) */}
         <div className="w-full max-w-5xl bg-white rounded-[24px] p-6 md:p-10 shadow-sm border border-gray-100">
             
           {/* Header */}
@@ -209,65 +220,27 @@ export default function Deposit() {
                 </div>
               ) : customerInfo ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Personal Info */}
                   <div className="flex flex-col gap-4">
                     <h4 className="font-bold text-gray-800 text-[12px] uppercase tracking-wide border-b border-gray-200 pb-2">Personal Information</h4>
                     <div className="grid grid-cols-2 gap-y-3 gap-x-4">
-                      <div>
-                        <p className="text-[11px] text-gray-400 font-medium uppercase">Full Name</p>
-                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.hoTen}</p>
-                      </div>
-                      <div>
-                        <p className="text-[11px] text-gray-400 font-medium uppercase">Phone</p>
-                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.sdt}</p>
-                      </div>
-                      <div>
-                        <p className="text-[11px] text-gray-400 font-medium uppercase">ID / CCCD</p>
-                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.cccd}</p>
-                      </div>
-                      <div>
-                        <p className="text-[11px] text-gray-400 font-medium uppercase">Gender</p>
-                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.gioiTinh}</p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-[11px] text-gray-400 font-medium uppercase">Email</p>
-                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.email}</p>
-                      </div>
+                      <div><p className="text-[11px] text-gray-400 font-medium uppercase">Full Name</p><p className="text-[13px] font-medium text-gray-800">{customerInfo.hoTen}</p></div>
+                      <div><p className="text-[11px] text-gray-400 font-medium uppercase">Phone</p><p className="text-[13px] font-medium text-gray-800">{customerInfo.sdt}</p></div>
+                      <div><p className="text-[11px] text-gray-400 font-medium uppercase">ID / CCCD</p><p className="text-[13px] font-medium text-gray-800">{customerInfo.cccd}</p></div>
+                      <div><p className="text-[11px] text-gray-400 font-medium uppercase">Gender</p><p className="text-[13px] font-medium text-gray-800">{customerInfo.gioiTinh}</p></div>
                     </div>
                   </div>
-
-                  {/* Requirements Info */}
                   <div className="flex flex-col gap-4">
                     <h4 className="font-bold text-gray-800 text-[12px] uppercase tracking-wide border-b border-gray-200 pb-2">Rental Requirements</h4>
                     <div className="grid grid-cols-2 gap-y-3 gap-x-4">
-                      <div>
-                        <p className="text-[11px] text-gray-400 font-medium uppercase">Room Type</p>
-                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.loaiPhong}</p>
-                      </div>
-                      <div>
-                        <p className="text-[11px] text-gray-400 font-medium uppercase">Form</p>
-                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.hinhThucThue}</p>
-                      </div>
-                      <div>
-                        <p className="text-[11px] text-gray-400 font-medium uppercase">Area</p>
-                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.khuVucMongMuon}</p>
-                      </div>
-                      <div>
-                        <p className="text-[11px] text-gray-400 font-medium uppercase">Budget</p>
-                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.giaMongMuon}</p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-[11px] text-gray-400 font-medium uppercase">Additional Notes</p>
-                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.yeuCauThem}</p>
-                      </div>
+                      <div><p className="text-[11px] text-gray-400 font-medium uppercase">Room Type</p><p className="text-[13px] font-medium text-gray-800">{customerInfo.loaiPhong}</p></div>
+                      <div><p className="text-[11px] text-gray-400 font-medium uppercase">Form</p><p className="text-[13px] font-medium text-gray-800">{customerInfo.hinhThucThue}</p></div>
+                      <div><p className="text-[11px] text-gray-400 font-medium uppercase">Budget</p><p className="text-[13px] font-medium text-gray-800">{customerInfo.giaMongMuon}</p></div>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="text-center text-[13px] text-gray-400">
-                  {customerName.trim() && customerPhone.trim() 
-                    ? "No matching customer found in the system."
-                    : "Enter customer Name and Phone Number to fetch details."}
+                  {customerName.trim() && customerPhone.trim() ? "No matching customer found in the system." : "Enter customer Name and Phone Number to fetch details."}
                 </div>
               )}
             </div>
@@ -276,7 +249,6 @@ export default function Deposit() {
           {/* SECTION 2: Rental Terms & Conditions */}
           <div className="mb-10">
             <h3 className="text-[13px] font-bold text-[#d58047] uppercase tracking-wider mb-4">2. Rental Terms & Conditions</h3>
-            
             <div className="bg-gray-50/50 border border-gray-100 rounded-xl p-6 max-h-64 overflow-y-auto custom-scrollbar">
               {termsLoading ? (
                 <div className="text-[13px] text-gray-400 text-center py-4">Loading terms...</div>
@@ -284,12 +256,8 @@ export default function Deposit() {
                 <div className="flex flex-col gap-4">
                   {rentalTerms.map((term, index) => (
                     <div key={term.idDieuKien || index} className="border-b border-gray-100 pb-4 last:border-none last:pb-0">
-                      <p className="text-[12px] font-bold text-gray-600 mb-1 tracking-wide">
-                        {index + 1}. {term.tenDieuKien || term.name || `Điều kiện ${index + 1}`}
-                      </p>
-                      <p className="text-[13px] text-gray-500 leading-relaxed whitespace-pre-wrap">
-                        {term.moTa || term.description || "Chưa có mô tả chi tiết."}
-                      </p>
+                      <p className="text-[12px] font-bold text-gray-600 mb-1 tracking-wide">{index + 1}. {term.tenDieuKien || term.name}</p>
+                      <p className="text-[13px] text-gray-500 leading-relaxed whitespace-pre-wrap">{term.moTa || term.description}</p>
                     </div>
                   ))}
                 </div>
@@ -299,64 +267,47 @@ export default function Deposit() {
             </div>
           </div>
 
-          {/* SECTION 3: Target Room & Submit */}
+          {/* SECTION 3: Target Room & Finalization */}
           <div>
             <h3 className="text-[13px] font-bold text-[#d58047] uppercase tracking-wider mb-4">3. Target Room & Finalization</h3>
-            
-            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 mb-6">
-              <div className="flex items-center bg-gray-50/50 border border-gray-100 rounded-lg px-3 py-2.5 w-full lg:w-72">
-                <span className="text-gray-500 text-[13px] mr-3 whitespace-nowrap">Room:</span>
-                <select
-                  value={selectedRoom}
-                  onChange={(e) => setSelectedRoom(e.target.value)}
-                  className="w-full bg-transparent outline-none text-[13px] text-gray-800 font-medium cursor-pointer"
-                  disabled={roomsLoading}
-                >
-                  {roomsLoading ? (
-                    <option>Loading...</option>
-                  ) : rooms.length > 0 ? (
-                    rooms.map((room) => (
-                      <option key={room.idPhong} value={`${room.tenPhong || `Phòng ${room.idPhong}`} - ${room.loaiPhong}`}>
-                        {room.tenPhong || `Phòng ${room.idPhong}`} - {room.loaiPhong}
-                      </option>
-                    ))
-                  ) : (
-                    <option>No rooms</option>
-                  )}
-                </select>
+            <div className="flex flex-col gap-6 mb-6">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
+                {/* Select Room */}
+                <div className="flex items-center bg-gray-50/50 border border-gray-100 rounded-lg px-3 py-2.5 w-full lg:w-72">
+                  <span className="text-gray-500 text-[13px] mr-3 whitespace-nowrap">Room:</span>
+                  <select
+                    value={selectedRoom}
+                    onChange={(e) => setSelectedRoom(e.target.value)}
+                    className="w-full bg-transparent outline-none text-[13px] text-gray-800 font-medium cursor-pointer"
+                    disabled={roomsLoading}
+                  >
+                    {roomsLoading ? <option>Loading...</option> : rooms.length > 0 ? rooms.map((room) => (
+                      <option key={room.idPhong} value={room.idPhong.toString()}>{room.tenPhong || `Phòng ${room.idPhong}`} - {room.loaiPhong}</option>
+                    )) : <option>No rooms</option>}
+                  </select>
+                </div>
               </div>
 
-              <div className="flex items-center bg-gray-50/50 border border-gray-100 rounded-lg px-3 py-2.5 w-full lg:w-64">
-                <span className="text-gray-500 text-[13px] mr-3 whitespace-nowrap">Status:</span>
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="w-full bg-transparent outline-none text-[13px] text-gray-800 font-medium cursor-pointer"
-                >
-                  <option value="1">Nguyên căn</option>
-                  <option value="2">Giường trống</option>
-                </select>
-              </div>
-
-              <div className="bg-[#faeddb] text-[#d58047] font-semibold text-[12px] px-4 py-2.5 rounded-lg border border-[#efd9c2] w-full lg:w-auto text-center">
-                {selectedRoom || 'None'} <span className="text-[#c2723c] mx-1">•</span> {statusLabel}
-              </div>
+              {/* Thông tin chi tiết phòng */}
+              {selectedRoomObj && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-[#faeddb]/30 border border-[#efd9c2] rounded-xl p-4">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-[#c2723c] font-bold uppercase">Trạng thái</span>
+                    <span className="text-[13px] font-semibold text-gray-800">{selectedRoomObj.trangThai || 'N/A'}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-[#c2723c] font-bold uppercase">Sức chứa</span>
+                    <span className="text-[13px] font-semibold text-gray-800">{selectedRoomObj.sucChua ? `${selectedRoomObj.sucChua} người` : 'N/A'}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-[#c2723c] font-bold uppercase">Điện & Nước</span>
+                    <span className="text-[13px] font-semibold text-gray-800">{selectedRoomObj.chiPhiDienNuoc ? `${selectedRoomObj.chiPhiDienNuoc.toLocaleString('vi-VN')} VND` : 'N/A'}</span>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center gap-3 mb-8 px-2">
-              <input 
-                type="checkbox" 
-                id="agreement"
-                checked={isAgreed}
-                onChange={(e) => setIsAgreed(e.target.checked)}
-                className="w-4 h-4 text-[#d58047] bg-gray-100 border-gray-300 rounded focus:ring-[#d58047] focus:ring-2 cursor-pointer" 
-              />
-              <label htmlFor="agreement" className="text-[13px] text-gray-600 cursor-pointer select-none">
-                I verify that the customer meets all conditions and agrees to the terms above.
-              </label>
-            </div>
-
-            <div className="flex justify-end pt-6 border-t border-gray-100 gap-4">
+            <div className="flex justify-end pt-6 border-t border-gray-100 gap-4 mt-8">
               <button 
                 onClick={() => navigate(-1)} 
                 className="px-6 py-2.5 rounded-lg border border-gray-200 text-[12px] uppercase font-bold text-gray-500 hover:bg-gray-50 transition-colors tracking-wide"
@@ -365,7 +316,7 @@ export default function Deposit() {
               </button>
               <button 
                 onClick={handleSubmit} 
-                disabled={!isAgreed || !customerInfo}
+                disabled={!customerInfo || !selectedRoom}
                 className="px-8 py-2.5 rounded-lg text-[12px] uppercase font-bold transition-all tracking-wide bg-[#d58047] text-white hover:bg-[#c2723c] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 PROCEED TO DEPOSIT
@@ -374,6 +325,38 @@ export default function Deposit() {
           </div>
 
         </div>
+
+        {/* ========================================== */}
+        {/* MODAL THÔNG BÁO THÀNH CÔNG */}
+        {/* ========================================== */}
+        {showSuccessModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-300">
+            <div className="bg-white rounded-[24px] p-8 max-w-sm w-full mx-4 flex flex-col items-center text-center shadow-2xl transform scale-100 animate-fade-in-up">
+              
+              {/* Icon tick xanh tròn */}
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-5 shadow-sm">
+                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              
+              {/* Text thông báo */}
+              <h3 className="text-xl font-bold text-gray-800 mb-2 tracking-wide">Thành công!</h3>
+              <p className="text-gray-500 text-[14px] mb-8 leading-relaxed">
+                Xác nhận đặt cọc thành công cho khách hàng <br/> <strong className="text-gray-800">{customerInfo?.hoTen}</strong>.
+              </p>
+              
+              {/* Nút đóng */}
+              <button
+                onClick={handleCloseModal}
+                className="w-full py-3 bg-[#d58047] text-white rounded-xl text-[13px] font-bold uppercase tracking-widest hover:bg-[#c2723c] transition-colors shadow-md hover:shadow-lg"
+              >
+                Hoàn tất
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
     </MainLayout>
   );

@@ -1,13 +1,26 @@
+
+// ==========================================
+// FILE 1: src/controllers/depostController.js
+// ==========================================
+
 const { PrismaClient } = require('@prisma/client');
+
 const prisma = new PrismaClient();
 
-// LOOKUP CUSTOMER + PHIEU YEU CAU
+/**
+ * =========================================
+ * TRA CỨU KHÁCH HÀNG + PHIẾU YÊU CẦU
+ * =========================================
+ */
 const lookupCustomer = async (req, res) => {
   try {
     const { hoTen, sdt } = req.query;
 
     if (!hoTen || !sdt) {
-      return res.status(400).json({ success: false, message: "Vui lòng nhập họ tên và số điện thoại." });
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập họ tên và số điện thoại.",
+      });
     }
 
     const khachHang = await prisma.khachHang.findFirst({
@@ -18,6 +31,7 @@ const lookupCustomer = async (req, res) => {
         },
         sdt: sdt.trim()
       },
+
       include: {
         phieuYeuCau: true,
         ttinDatCocs: {
@@ -34,20 +48,37 @@ const lookupCustomer = async (req, res) => {
     });
 
     if (!khachHang) {
-      return res.status(404).json({ success: false, message: "Không tìm thấy khách hàng." });
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy khách hàng.",
+      });
     }
 
-    res.json({ success: true, data: khachHang });
+    return res.status(200).json({
+      success: true,
+      data: khachHang,
+    });
+
   } catch (error) {
-    console.error("lookupCustomer error:", error);
-    res.status(500).json({ success: false, message: "Lỗi server khi tra cứu khách hàng." });
+    console.error("LOOKUP CUSTOMER ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi server.",
+      error: error.message,
+    });
   }
 };
 
-// GET CONDITIONS (ĐIỀU KIỆN LƯU TRÚ)
+/**
+ * =========================================
+ * LẤY ĐIỀU KIỆN LƯU TRÚ
+ * =========================================
+ */
 const getConditions = async (req, res) => {
   try {
     const conditions = await prisma.dieuKienLuuTru.findMany({
+      // Lấy đúng các trường theo schema 
       select: {
         idDieuKien: true,
         tenDieuKien: true,
@@ -58,33 +89,42 @@ const getConditions = async (req, res) => {
       }
     });
 
-    res.json({ success: true, data: conditions });
+    return res.status(200).json({
+      success: true,
+      data: conditions,
+    });
   } catch (error) {
-    console.error("getConditions error:", error);
-    res.status(500).json({ success: false, message: "Lỗi server khi tải điều kiện lưu trú." });
+    console.error("GET CONDITIONS ERROR:", error);
+    return res.status(500).json({ success: false, message: "Lỗi server." });
   }
 };
 
-// GET ROOMS (DANH SÁCH PHÒNG CHO ĐẶT CỌC)
+
+/**
+ * =========================================
+ * LẤY DANH SÁCH PHÒNG
+ * =========================================
+ */
+// Đảm bảo getRooms lấy đúng trường tenPhong (trong schema bạn ghi là tenPhong nhưng model lại là loaiPhong)
 const getRooms = async (req, res) => {
   try {
     const rooms = await prisma.phong.findMany({
-      select: {
-        idPhong: true,
+      select: { 
+        idPhong: true, 
         loaiPhong: true, 
         trangThai: true,
+        sucChua: true,         
+        chiPhiDienNuoc: true   
       },
-      orderBy: {
-        idPhong: 'asc',
-      }
+      orderBy: { idPhong: 'asc' }
     });
-    
     res.json({ success: true, data: rooms });
   } catch (error) {
     console.error("getRooms error:", error);
-    res.status(500).json({ success: false, message: "Lỗi server khi lấy danh sách phòng." });
+    res.status(500).json({ success: false, message: "Lỗi server khi lấy phòng." });
   }
 };
+
 
 const calculateDepositOut = async (req, res) => {
   try {
@@ -111,3 +151,4 @@ module.exports = {
   calculateDepositOut,
   finalizeDepositOut
 };
+
