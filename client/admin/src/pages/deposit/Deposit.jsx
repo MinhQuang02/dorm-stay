@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../../components/Layout/MainLayout';
 
+const API_BASE = "http://localhost:5000/api";
+
 export default function Deposit() {
   const navigate = useNavigate();
   
@@ -22,9 +24,11 @@ export default function Deposit() {
   // States cho chọn phòng
   const [selectedRoom, setSelectedRoom] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('1');
+  const [isAgreed, setIsAgreed] = useState(false);
+  
   const statusLabel = selectedStatus === '1' ? 'Nguyên căn' : 'Giường trống';
 
-  // Effect 1: Tra cứu thông tin khách hàng từ /api/deposit/customer (debounce 800ms)
+  // Effect 1: Tra cứu thông tin khách hàng (debounce 800ms)
   useEffect(() => {
     const lookupCustomer = async () => {
       if (!customerName.trim() || !customerPhone.trim()) {
@@ -34,8 +38,10 @@ export default function Deposit() {
 
       setCustomerLoading(true);
       try {
+        const token = localStorage.getItem("token");
         const res = await fetch(
-          `http://localhost:5000/api/deposit/customer?hoTen=${encodeURIComponent(customerName.trim())}&sdt=${encodeURIComponent(customerPhone.trim())}`
+          `${API_BASE}/deposit/customer?hoTen=${encodeURIComponent(customerName.trim())}&sdt=${encodeURIComponent(customerPhone.trim())}`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         
         if (!res.ok) {
@@ -47,7 +53,6 @@ export default function Deposit() {
         
         if (data.success && data.data) {
           const customer = data.data;
-          // Lấy phiều yêu cầu, nếu là array thì lấy phần tử đầu
           const phieu = Array.isArray(customer.phieuYeuCau) 
             ? customer.phieuYeuCau[0] 
             : customer.phieuYeuCau || {};
@@ -60,8 +65,6 @@ export default function Deposit() {
             ngaySinh: customer.ngaySinh ? new Date(customer.ngaySinh).toLocaleDateString('vi-VN') : 'N/A',
             cccd: customer.cccd || 'N/A',
             quocTich: customer.quocTich || 'N/A',
-            
-            // PhieuYeuCau data
             khuVucMongMuon: phieu.khuVucMongMuon || 'N/A',
             giaMongMuon: phieu.giaMongMuon ? `${phieu.giaMongMuon.toLocaleString('vi-VN')} VND` : 'N/A',
             loaiPhong: phieu.loaiPhong || 'N/A',
@@ -86,30 +89,24 @@ export default function Deposit() {
     return () => clearTimeout(timer);
   }, [customerName, customerPhone]);
 
-  // Effect 2: Fetch Điều kiện lưu trú từ /api/deposit/conditions
+  // Effect 2: Fetch Điều kiện lưu trú
   useEffect(() => {
     const fetchTerms = async () => {
       setTermsLoading(true);
       try {
-        const res = await fetch('http://localhost:5000/api/deposit/conditions'); 
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_BASE}/deposit/conditions`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }); 
         
-        // Kiểm tra xem server có trả về HTTP Status 200 không
         if (res.ok) {
           const data = await res.json();
-          
-          // Thêm dòng log này để kiểm tra xem Backend thực sự trả về gì
-          console.log("Dữ liệu API Điều kiện lưu trú trả về:", data); 
-
           if (data.success && Array.isArray(data.data)) {
             setRentalTerms(data.data);
-          } else {
-            console.error("Dữ liệu trả về không đúng định dạng mong đợi:", data);
           }
-        } else {
-          console.error("Lỗi gọi API Điều kiện lưu trú. HTTP Status:", res.status);
         }
       } catch (error) {
-        console.error("Lỗi mạng hoặc lỗi hệ thống khi tải điều kiện lưu trú:", error);
+        console.error("Lỗi tải điều kiện lưu trú:", error);
       } finally {
         setTermsLoading(false);
       }
@@ -118,32 +115,27 @@ export default function Deposit() {
     fetchTerms();
   }, []);
 
-  // Effect 3: Fetch danh sách phòng từ /api/deposit/rooms
+  // Effect 3: Fetch danh sách phòng
   useEffect(() => {
     const fetchRooms = async () => {
       setRoomsLoading(true);
       try {
-        const res = await fetch('http://localhost:5000/api/deposit/rooms');
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_BASE}/deposit/rooms`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         
         if (res.ok) {
           const data = await res.json();
-          
-          // Thêm log để bạn xem dữ liệu thực tế API trả về
-          console.log("Dữ liệu API Danh sách phòng trả về:", data);
-
           if (data.success && Array.isArray(data.data)) {
             setRooms(data.data);
-            
-            // Đã sửa 'tenPhong' thành 'idPhong' cho khớp với Database
             if (data.data.length > 0) {
               setSelectedRoom(`Phòng ${data.data[0].idPhong} - ${data.data[0].loaiPhong}`);
             }
           }
-        } else {
-           console.error("Lỗi gọi API Danh sách phòng. HTTP Status:", res.status);
         }
       } catch (error) {
-        console.error("Lỗi khi tải danh sách phòng:", error);
+        console.error("Lỗi tải danh sách phòng:", error);
       } finally {
         setRoomsLoading(false);
       }
@@ -151,206 +143,238 @@ export default function Deposit() {
 
     fetchRooms();
   }, []);
-    return (
-        <MainLayout title="Deposit Term Confirmation" mainClassName="flex-1 px-6 md:px-12 py-10 flex flex-col items-center">
-        <div className="w-full max-w-4xl">
+
+  const handleSubmit = () => {
+    // Thêm logic submit ở đây
+    navigate('/');
+  };
+
+  return (
+    <MainLayout title="Deposit Term Confirmation">
+      <div className="flex-1 px-4 md:px-8 py-10 bg-[#fbfbfa] min-h-screen flex flex-col items-center">
+        
+        {/* KHUNG TRẮNG CHỨA TẤT CẢ (Giống RoomList) */}
+        <div className="w-full max-w-5xl bg-white rounded-[24px] p-6 md:p-10 shadow-sm border border-gray-100">
             
-            {/* SECTION 1: Customer Info */}
-            <div className="mb-10">
-                <h2 className="text-xl font-bold text-black mb-4">1. Customer & Room Information</h2>
-                
-                <div className="bg-[#f7ece0] border border-[#ebd7c2] rounded-[24px] p-6 md:p-8 flex flex-col gap-8">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-12">
-                        <div className="flex flex-col gap-1.5">
-                            <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider">Customer Name</span>
-                            <input
-                                type="text"
-                                value={customerName}
-                                onChange={(e) => setCustomerName(e.target.value)}
-                                placeholder="Nhập tên khách hàng"
-                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2.5 text-gray-700 text-[14px] outline-none focus:border-[#cc6b34]"
-                            />
-                        </div>
+          {/* Header */}
+          <div className="mb-8 border-b border-gray-100 pb-4">
+            <h2 className="text-xl font-bold text-black uppercase tracking-wide">DEPOSIT CONFIRMATION</h2>
+            <p className="text-[13px] text-gray-500 mt-1">Please verify customer information and select terms for the deposit.</p>
+          </div>
 
-                        <div className="flex flex-col gap-1.5">
-                            <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider">Phone Number</span>
-                            <input
-                                type="text"
-                                value={customerPhone}
-                                onChange={(e) => setCustomerPhone(e.target.value)}
-                                placeholder="Nhập số điện thoại"
-                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2.5 text-gray-700 text-[14px] outline-none focus:border-[#cc6b34]"
-                            />
-                        </div>
-                    </div>
-
-                    {customerLoading ? (
-                        <div className="rounded-md border border-dashed border-[#cc6b34] bg-white/50 p-6 text-center text-[14px] text-[#cc6b34] font-medium">
-                            Đang tải thông tin khách hàng...
-                        </div>
-                    ) : customerInfo ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-[#ebd7c2] pt-8">
-                            {/* Cột 1: Thông tin cá nhân */}
-                            <div className="flex flex-col gap-4">
-                                <h3 className="font-bold text-black text-sm uppercase border-b border-[#ebd7c2] pb-2">Thông tin cá nhân</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Họ & Tên</span>
-                                        <span className="text-[14px] font-bold text-black">{customerInfo.hoTen}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Số điện thoại</span>
-                                        <span className="text-[14px] font-bold text-black">{customerInfo.sdt}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">CCCD</span>
-                                        <span className="text-[14px] font-bold text-black">{customerInfo.cccd}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Giới tính</span>
-                                        <span className="text-[14px] font-bold text-black">{customerInfo.gioiTinh}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Ngày sinh</span>
-                                        <span className="text-[14px] font-bold text-black">{customerInfo.ngaySinh}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Email</span>
-                                        <span className="text-[14px] font-bold text-black truncate" title={customerInfo.email}>{customerInfo.email}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Cột 2: Yêu cầu thuê */}
-                            <div className="flex flex-col gap-4">
-                                <h3 className="font-bold text-black text-sm uppercase border-b border-[#ebd7c2] pb-2">Nhu cầu thuê</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Loại phòng</span>
-                                        <span className="text-[14px] font-bold text-black">{customerInfo.loaiPhong}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Hình thức</span>
-                                        <span className="text-[14px] font-bold text-black">{customerInfo.hinhThucThue}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Khu vực</span>
-                                        <span className="text-[14px] font-bold text-black">{customerInfo.khuVucMongMuon}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Ngân sách</span>
-                                        <span className="text-[14px] font-bold text-black">{customerInfo.giaMongMuon}</span>
-                                    </div>
-                                    <div className="col-span-2 flex flex-col gap-1">
-                                        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Yêu cầu thêm</span>
-                                        <span className="text-[14px] font-bold text-black leading-snug">{customerInfo.yeuCauThem}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="rounded-md border border-dashed border-gray-300 bg-white p-6 text-center text-[14px] text-gray-500">
-                            {customerName.trim() && customerPhone.trim() 
-                                ? "Không tìm thấy dữ liệu khách hàng hợp lệ trong hệ thống."
-                                : "Nhập Tên và Số điện thoại khách hàng để tra cứu toàn bộ thông tin."}
-                        </div>
-                    )}
+          {/* SECTION 1: Customer Info */}
+          <div className="mb-10">
+            <h3 className="text-[13px] font-bold text-[#d58047] uppercase tracking-wider mb-4">1. Customer Information</h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <div className="flex flex-col gap-1.5 relative">
+                <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Customer Name</span>
+                <div className="relative">
+                  <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="E.g., John Doe"
+                    className="w-full pl-9 pr-4 py-2.5 border border-gray-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#d58047] text-[13px] text-gray-800 bg-gray-50/50"
+                  />
                 </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Phone Number</span>
+                <div className="relative">
+                  <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="E.g., 0901234567"
+                    className="w-full pl-9 pr-4 py-2.5 border border-gray-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#d58047] text-[13px] text-gray-800 bg-gray-50/50"
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* SECTION 2: Rental Terms & Conditions */}
-            <div className="mb-10">
-                <h2 className="text-xl font-bold text-black mb-4">2. Rental Terms & Conditions</h2>
-                
-                <div className="bg-[#f7ece0] border border-[#ebd7c2] rounded-[24px] p-6 md:p-8 flex flex-col gap-6">
-                    {termsLoading ? (
-                        <div className="text-[14px] text-gray-500 text-center py-4">Đang tải các điều khoản...</div>
-                  ) : rentalTerms.length > 0 ? (
-                      rentalTerms.map((term, index) => (
-                          <div key={term.idDieuKien || index}>
-                              <p className="text-[12px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-                                  {index + 1}. {term.tenDieuKien || term.name || `Điều kiện ${index + 1}`}
-                              </p>
-                              <p className="text-[14px] font-bold text-black leading-snug whitespace-pre-wrap">
-                                  {term.moTa || term.description || "Chưa có mô tả chi tiết."}
-                              </p>
-                          </div>
-                      ))
+            {/* Khung kết quả tra cứu */}
+            <div className="bg-gray-50/50 border border-gray-100 rounded-xl p-6 transition-all min-h-[120px] flex flex-col justify-center">
+              {customerLoading ? (
+                <div className="text-center text-[13px] text-[#d58047] font-medium flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-[#d58047] border-t-transparent rounded-full animate-spin" />
+                  Searching customer data...
+                </div>
+              ) : customerInfo ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Personal Info */}
+                  <div className="flex flex-col gap-4">
+                    <h4 className="font-bold text-gray-800 text-[12px] uppercase tracking-wide border-b border-gray-200 pb-2">Personal Information</h4>
+                    <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                      <div>
+                        <p className="text-[11px] text-gray-400 font-medium uppercase">Full Name</p>
+                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.hoTen}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-gray-400 font-medium uppercase">Phone</p>
+                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.sdt}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-gray-400 font-medium uppercase">ID / CCCD</p>
+                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.cccd}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-gray-400 font-medium uppercase">Gender</p>
+                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.gioiTinh}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-[11px] text-gray-400 font-medium uppercase">Email</p>
+                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.email}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Requirements Info */}
+                  <div className="flex flex-col gap-4">
+                    <h4 className="font-bold text-gray-800 text-[12px] uppercase tracking-wide border-b border-gray-200 pb-2">Rental Requirements</h4>
+                    <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                      <div>
+                        <p className="text-[11px] text-gray-400 font-medium uppercase">Room Type</p>
+                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.loaiPhong}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-gray-400 font-medium uppercase">Form</p>
+                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.hinhThucThue}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-gray-400 font-medium uppercase">Area</p>
+                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.khuVucMongMuon}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-gray-400 font-medium uppercase">Budget</p>
+                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.giaMongMuon}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-[11px] text-gray-400 font-medium uppercase">Additional Notes</p>
+                        <p className="text-[13px] font-medium text-gray-800">{customerInfo.yeuCauThem}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-[13px] text-gray-400">
+                  {customerName.trim() && customerPhone.trim() 
+                    ? "No matching customer found in the system."
+                    : "Enter customer Name and Phone Number to fetch details."}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* SECTION 2: Rental Terms & Conditions */}
+          <div className="mb-10">
+            <h3 className="text-[13px] font-bold text-[#d58047] uppercase tracking-wider mb-4">2. Rental Terms & Conditions</h3>
+            
+            <div className="bg-gray-50/50 border border-gray-100 rounded-xl p-6 max-h-64 overflow-y-auto custom-scrollbar">
+              {termsLoading ? (
+                <div className="text-[13px] text-gray-400 text-center py-4">Loading terms...</div>
+              ) : rentalTerms.length > 0 ? (
+                <div className="flex flex-col gap-4">
+                  {rentalTerms.map((term, index) => (
+                    <div key={term.idDieuKien || index} className="border-b border-gray-100 pb-4 last:border-none last:pb-0">
+                      <p className="text-[12px] font-bold text-gray-600 mb-1 tracking-wide">
+                        {index + 1}. {term.tenDieuKien || term.name || `Điều kiện ${index + 1}`}
+                      </p>
+                      <p className="text-[13px] text-gray-500 leading-relaxed whitespace-pre-wrap">
+                        {term.moTa || term.description || "Chưa có mô tả chi tiết."}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-[13px] text-gray-400 text-center py-4">Chưa có điều kiện lưu trú nào được thiết lập.</div>
+              )}
+            </div>
+          </div>
+
+          {/* SECTION 3: Target Room & Submit */}
+          <div>
+            <h3 className="text-[13px] font-bold text-[#d58047] uppercase tracking-wider mb-4">3. Target Room & Finalization</h3>
+            
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 mb-6">
+              <div className="flex items-center bg-gray-50/50 border border-gray-100 rounded-lg px-3 py-2.5 w-full lg:w-72">
+                <span className="text-gray-500 text-[13px] mr-3 whitespace-nowrap">Room:</span>
+                <select
+                  value={selectedRoom}
+                  onChange={(e) => setSelectedRoom(e.target.value)}
+                  className="w-full bg-transparent outline-none text-[13px] text-gray-800 font-medium cursor-pointer"
+                  disabled={roomsLoading}
+                >
+                  {roomsLoading ? (
+                    <option>Loading...</option>
+                  ) : rooms.length > 0 ? (
+                    rooms.map((room) => (
+                      <option key={room.idPhong} value={`${room.tenPhong || `Phòng ${room.idPhong}`} - ${room.loaiPhong}`}>
+                        {room.tenPhong || `Phòng ${room.idPhong}`} - {room.loaiPhong}
+                      </option>
+                    ))
                   ) : (
-                        <div className="text-[14px] text-gray-500 text-center py-4">Chưa có điều kiện lưu trú nào được thiết lập.</div>
-                    )}
-                </div>
+                    <option>No rooms</option>
+                  )}
+                </select>
+              </div>
+
+              <div className="flex items-center bg-gray-50/50 border border-gray-100 rounded-lg px-3 py-2.5 w-full lg:w-64">
+                <span className="text-gray-500 text-[13px] mr-3 whitespace-nowrap">Status:</span>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-full bg-transparent outline-none text-[13px] text-gray-800 font-medium cursor-pointer"
+                >
+                  <option value="1">Nguyên căn</option>
+                  <option value="2">Giường trống</option>
+                </select>
+              </div>
+
+              <div className="bg-[#faeddb] text-[#d58047] font-semibold text-[12px] px-4 py-2.5 rounded-lg border border-[#efd9c2] w-full lg:w-auto text-center">
+                {selectedRoom || 'None'} <span className="text-[#c2723c] mx-1">•</span> {statusLabel}
+              </div>
             </div>
 
-            {/* SECTION 3: Target Room & Final Submit */}
-            <div className="flex flex-col gap-4">
-                <h3 className="font-bold text-black text-[15px]">Target Room / Bed</h3>
-                
-                <p className="text-[13px] text-gray-500">Chọn phòng ở ô đầu và chọn trạng thái ở ô bên cạnh.</p>
-
-                <div className="flex flex-wrap items-center gap-4">
-                    <div className="relative w-[280px]">
-                        <select
-                            value={selectedRoom}
-                            onChange={(e) => setSelectedRoom(e.target.value)}
-                            className="w-full appearance-none bg-transparent border border-gray-300 rounded-md px-3 py-2.5 text-gray-500 text-[14px] outline-none"
-                            disabled={roomsLoading}
-                        >
-                            {roomsLoading ? (
-                                <option>Đang tải phòng...</option>
-                            ) : rooms.length > 0 ? (
-                                rooms.map((room) => (
-                                    <option key={room.idPhong} value={`${room.tenPhong} - ${room.loaiPhong}`}>
-                                        {room.tenPhong} - {room.loaiPhong}
-                                    </option>
-                                ))
-                            ) : (
-                                <option>Không có phòng nào</option>
-                            )}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
-                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                        </div>
-                    </div>
-
-                    <div className="relative w-[280px]">
-                        <select
-                            value={selectedStatus}
-                            onChange={(e) => setSelectedStatus(e.target.value)}
-                            className="w-full appearance-none bg-transparent border border-gray-300 rounded-md px-3 py-2.5 text-gray-500 text-[14px] outline-none"
-                        >
-                            <option value="1">1 - Nguyên căn</option>
-                            <option value="2">2 - Giường trống</option>
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
-                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                        </div>
-                    </div>
-
-                    <button className="bg-white border border-[#faeddb] text-[#cc6b34] font-bold text-[14px] px-4 py-2.5 rounded-md hover:bg-gray-50 transition-colors">
-                        Check Availability
-                    </button>
-                </div>
-
-                <div className="mt-1">
-                    <div className="bg-[#faeddb] border border-[#f0dfc8] text-black font-bold text-[14px] px-5 py-3 rounded-md inline-block">
-                        {selectedRoom || 'Chưa chọn phòng'} - {statusLabel} is selected.
-                    </div>
-                </div>
-
-                <div className="bg-[#f2f2f2] border-[2px] border-dashed border-[#d1d1d1] rounded-lg p-5 flex items-center gap-5 mt-6">
-                    <input type="checkbox" className="custom-checkbox shrink-0 w-5 h-5 accent-[#cc6b34]" />
-                    <span className="text-[14px] font-bold text-black">I verify that the customer meets all conditions and agrees to the terms above.</span>
-                </div>
-
-                <div className="mt-6 flex justify-center">
-                    <button onClick={() => navigate('/')} className="bg-[#ce7641] text-white font-bold text-[15px] px-12 py-4 rounded-xl shadow-sm hover:bg-[#b55e2d] transition-colors tracking-wide">
-                        CONFIRM AGREEMENT & PROCEED TO DEPOSIT
-                    </button>
-                </div>
+            <div className="flex items-center gap-3 mb-8 px-2">
+              <input 
+                type="checkbox" 
+                id="agreement"
+                checked={isAgreed}
+                onChange={(e) => setIsAgreed(e.target.checked)}
+                className="w-4 h-4 text-[#d58047] bg-gray-100 border-gray-300 rounded focus:ring-[#d58047] focus:ring-2 cursor-pointer" 
+              />
+              <label htmlFor="agreement" className="text-[13px] text-gray-600 cursor-pointer select-none">
+                I verify that the customer meets all conditions and agrees to the terms above.
+              </label>
             </div>
+
+            <div className="flex justify-end pt-6 border-t border-gray-100 gap-4">
+              <button 
+                onClick={() => navigate(-1)} 
+                className="px-6 py-2.5 rounded-lg border border-gray-200 text-[12px] uppercase font-bold text-gray-500 hover:bg-gray-50 transition-colors tracking-wide"
+              >
+                CANCEL
+              </button>
+              <button 
+                onClick={handleSubmit} 
+                disabled={!isAgreed || !customerInfo}
+                className="px-8 py-2.5 rounded-lg text-[12px] uppercase font-bold transition-all tracking-wide bg-[#d58047] text-white hover:bg-[#c2723c] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                PROCEED TO DEPOSIT
+              </button>
+            </div>
+          </div>
 
         </div>
-        </MainLayout>
-    );
-    }
+      </div>
+    </MainLayout>
+  );
+}

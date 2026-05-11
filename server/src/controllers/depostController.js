@@ -1,26 +1,13 @@
-
-// ==========================================
-// FILE 1: src/controllers/depostController.js
-// ==========================================
-
 const { PrismaClient } = require('@prisma/client');
-
 const prisma = new PrismaClient();
 
-/**
- * =========================================
- * TRA CỨU KHÁCH HÀNG + PHIẾU YÊU CẦU
- * =========================================
- */
-exports.lookupCustomer = async (req, res) => {
+// LOOKUP CUSTOMER + PHIEU YEU CAU
+const lookupCustomer = async (req, res) => {
   try {
     const { hoTen, sdt } = req.query;
 
     if (!hoTen || !sdt) {
-      return res.status(400).json({
-        success: false,
-        message: "Vui lòng nhập họ tên và số điện thoại.",
-      });
+      return res.status(400).json({ success: false, message: "Vui lòng nhập họ tên và số điện thoại." });
     }
 
     const khachHang = await prisma.khachHang.findFirst({
@@ -31,44 +18,36 @@ exports.lookupCustomer = async (req, res) => {
         },
         sdt: sdt.trim(),
       },
-
       include: {
         phieuYeuCau: true,
+        ttinDatCocs: {
+          include: {
+            ttoan: true,
+            giuong: {
+              include: {
+                phong: true,
+              },
+            },
+          },
+        },
       },
     });
 
     if (!khachHang) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy khách hàng.",
-      });
+      return res.status(404).json({ success: false, message: "Không tìm thấy khách hàng." });
     }
 
-    return res.status(200).json({
-      success: true,
-      data: khachHang,
-    });
-
+    res.json({ success: true, data: khachHang });
   } catch (error) {
-    console.error("LOOKUP CUSTOMER ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Lỗi server.",
-      error: error.message,
-    });
+    console.error("lookupCustomer error:", error);
+    res.status(500).json({ success: false, message: "Lỗi server khi tra cứu khách hàng." });
   }
 };
 
-/**
- * =========================================
- * LẤY ĐIỀU KIỆN LƯU TRÚ
- * =========================================
- */
-exports.getConditions = async (req, res) => {
+// GET CONDITIONS (ĐIỀU KIỆN LƯU TRÚ)
+const getConditions = async (req, res) => {
   try {
     const conditions = await prisma.dieuKienLuuTru.findMany({
-      // Lấy đúng các trường theo schema 
       select: {
         idDieuKien: true,
         tenDieuKien: true,
@@ -79,36 +58,56 @@ exports.getConditions = async (req, res) => {
       },
     });
 
-    return res.status(200).json({
-      success: true,
-      data: conditions,
-    });
+    res.json({ success: true, data: conditions });
   } catch (error) {
-    console.error("GET CONDITIONS ERROR:", error);
-    return res.status(500).json({ success: false, message: "Lỗi server." });
+    console.error("getConditions error:", error);
+    res.status(500).json({ success: false, message: "Lỗi server khi tải điều kiện lưu trú." });
   }
 };
 
-
-/**
- * =========================================
- * LẤY DANH SÁCH PHÒNG
- * =========================================
- */
-// Đảm bảo getRooms lấy đúng trường tenPhong (trong schema bạn ghi là tenPhong nhưng model lại là loaiPhong)
-exports.getRooms = async (req, res) => {
+// GET ROOMS (DANH SÁCH PHÒNG CHO ĐẶT CỌC)
+const getRooms = async (req, res) => {
   try {
     const rooms = await prisma.phong.findMany({
       select: {
         idPhong: true,
-        // Lưu ý: Trong Schema  không có trường 'tenPhong', chỉ có 'loaiPhong'. 
-        // Tôi sẽ lấy 'loaiPhong' làm tên hiển thị hoặc bạn cần thêm trường vào Schema.
         loaiPhong: true, 
         trangThai: true,
       },
+      orderBy: {
+        idPhong: 'asc',
+      }
     });
-    return res.status(200).json({ success: true, data: rooms });
+    
+    res.json({ success: true, data: rooms });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Lỗi server." });
+    console.error("getRooms error:", error);
+    res.status(500).json({ success: false, message: "Lỗi server khi lấy danh sách phòng." });
   }
+};
+
+const calculateDepositOut = async (req, res) => {
+  try {
+    res.json({ success: false, message: "Not implemented yet." });
+  } catch (error) {
+    console.error("calculateDepositOut error:", error);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+};
+
+const finalizeDepositOut = async (req, res) => {
+  try {
+    res.json({ success: false, message: "Not implemented yet." });
+  } catch (error) {
+    console.error("finalizeDepositOut error:", error);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+};
+
+module.exports = {
+  lookupCustomer,
+  getConditions,
+  getRooms,
+  calculateDepositOut,
+  finalizeDepositOut
 };
