@@ -76,14 +76,10 @@ export default function RegistrationForm() {
 
   const handleNext = async (e) => {
     e.preventDefault();
-    if (!formData.hoTen || !formData.cccd || !formData.sdt) {
-      alert("Vui lòng điền đầy đủ các trường bắt buộc (*)");
-      return;
-    }
+    console.log("Dữ liệu gửi đi:", formData); // DÒNG NÀY ĐỂ KIỂM TRA
 
-    setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/booking/register', {
+      const res = await fetch('http://127.0.0.1:5000/api/booking/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -116,48 +112,48 @@ export default function RegistrationForm() {
         <form className="flex flex-col gap-6" onSubmit={handleNext}>
           <div className="flex flex-col gap-2">
             <label className="text-[13px] font-bold text-gray-600">Full Name <span className="text-gray-600">*</span></label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               required
               value={formData.hoTen}
-              onChange={(e) => setFormData({...formData, hoTen: e.target.value})}
-              placeholder="Enter Full Name" 
-              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm" 
+              onChange={(e) => setFormData({ ...formData, hoTen: e.target.value })}
+              placeholder="Enter Full Name"
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm"
             />
           </div>
 
           <div className="flex flex-col gap-2">
             <label className="text-[13px] font-bold text-gray-600">ID Card <span className="text-gray-600">*</span></label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               required
               value={formData.cccd}
-              onChange={(e) => setFormData({...formData, cccd: e.target.value})}
-              placeholder="Enter ID number" 
-              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm" 
+              onChange={(e) => setFormData({ ...formData, cccd: e.target.value })}
+              placeholder="Enter ID number"
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm"
             />
           </div>
 
           <div className="flex flex-col gap-2">
             <label className="text-[13px] font-bold text-gray-600">Phone Number <span className="text-gray-600">*</span></label>
-            <input 
-              type="tel" 
+            <input
+              type="tel"
               required
               value={formData.sdt}
-              onChange={(e) => setFormData({...formData, sdt: e.target.value})}
-              placeholder="Enter phone number" 
-              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm" 
+              onChange={(e) => setFormData({ ...formData, sdt: e.target.value })}
+              placeholder="Enter phone number"
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm"
             />
           </div>
 
           <div className="flex flex-col gap-2">
             <label className="text-[13px] font-bold text-gray-600">Email <span className="text-gray-600">*</span></label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-              placeholder="Enter email" 
-              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm" 
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="Enter email"
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm"
             />
           </div>
 
@@ -165,8 +161,8 @@ export default function RegistrationForm() {
             <Link to="/" className="px-12 py-3 rounded-lg border border-[#cc6b34] text-[#cc6b34] text-sm font-medium">
               Cancel
             </Link>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading}
               className="px-12 py-3 rounded-lg bg-[#cc6b34] text-white text-sm font-medium hover:bg-[#b55e2d] shadow-md"
             >

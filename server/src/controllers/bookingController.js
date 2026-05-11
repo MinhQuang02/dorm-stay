@@ -2,33 +2,31 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // 1. Xử lý Form đăng ký thông tin cá nhân (RegistrationForm.jsx)
+// Trong server/src/controllers/bookingController.js
 exports.submitRegistration = async (req, res) => {
   try {
+    // 1. Kiểm tra xem req.body có tồn tại không
+    if (!req.body) {
+      return res.status(400).json({ error: "Dữ liệu gửi lên bị trống (Empty Body)" });
+    }
+
     const { hoTen, sdt, email, cccd, hinhThucThue, soNguoi } = req.body;
-    const idTaiKhoanToken = 464; // ID test của bạn
+
+    // 2. Kiểm tra riêng field cccd
+    if (!cccd) {
+      return res.status(400).json({ error: "Thiếu trường dữ liệu 'cccd'. Vui lòng kiểm tra lại Frontend." });
+    }
+
+    const idTaiKhoanToken = 464;
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. SỬA TẠI ĐÂY: Upsert dựa trên idTaiKhoan để tránh lỗi Unique constraint
+      // Dùng idTaiKhoan để upsert như mình đã hướng dẫn ở bước trước
       const customer = await tx.khachHang.upsert({
-        where: { 
-          idTaiKhoan: idTaiKhoanToken 
-        },
-        update: { 
-          hoTen, 
-          sdt, 
-          email, 
-          cccd 
-        },
-        create: { 
-          hoTen, 
-          sdt, 
-          email, 
-          cccd, 
-          idTaiKhoan: idTaiKhoanToken 
-        }
+        where: { idTaiKhoan: idTaiKhoanToken },
+        update: { hoTen, sdt, email, cccd },
+        create: { hoTen, sdt, email, cccd, idTaiKhoan: idTaiKhoanToken }
       });
 
-      // 2. Tạo Phiếu yêu cầu mới cho mỗi lần đăng ký
       const phieu = await tx.phieuYeuCau.create({
         data: {
           hinhThucThue: hinhThucThue || 'O_GHEP',
@@ -38,7 +36,6 @@ exports.submitRegistration = async (req, res) => {
         }
       });
 
-      // 3. Cập nhật phiếu mới nhất cho tài khoản
       await tx.taiKhoan.update({
         where: { idTaiKhoan: idTaiKhoanToken },
         data: { phieuMoiNhatId: phieu.idPhieu }
@@ -49,8 +46,8 @@ exports.submitRegistration = async (req, res) => {
 
     return res.status(201).json({ success: true, data: result });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Lỗi hệ thống: " + error.message });
+    console.error("Lỗi tại submitRegistration:", error);
+    return res.status(500).json({ error: error.message });
   }
 };
 
@@ -92,48 +89,35 @@ exports.searchRooms = async (req, res) => {
 // 3. Xác nhận đặt lịch hẹn xem phòng (RegisterBooking.jsx)
 exports.finalizeBooking = async (req, res) => {
   try {
-    const { customer, room, bookingDetails } = req.body;
-    const idTaiKhoanToken = 464; // Giả định ID test
+    const { phieuId, room, bookingDetails } = req.body;
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Tạo/Cập nhật Khách hàng
-      const kh = await tx.khachHang.upsert({
-        where: { cccd: customer.cccd },
-        update: { hoTen: customer.hoTen, sdt: customer.sdt, email: customer.email, idTaiKhoan: idTaiKhoanToken },
-        create: { hoTen: customer.hoTen, sdt: customer.sdt, email: customer.email, cccd: customer.cccd, idTaiKhoan: idTaiKhoanToken }
-      });
-
-      // 2. Tạo Phiếu yêu cầu với THÔNG TIN PHÒNG DYNAMIC
-      const phieu = await tx.phieuYeuCau.create({
+      // 1. Cập nhật Phiếu yêu cầu với tên phòng và địa chỉ thực tế
+      const phieu = await tx.phieuYeuCau.update({
+        where: { idPhieu: parseInt(phieuId) },
         data: {
-          hinhThucThue: 'O_GHEP',
-          soNguoi: parseInt(bookingDetails.guests) || 1,
-          loaiPhong: room.name,        // Lưu: "Phòng Master tầng 3"
-          khuVucMongMuon: room.address // Lưu: "District 5, Ho Chi Minh City"
+          loaiPhong: room.name,        // Ví dụ: "Phòng Master tầng 3"
+          khuVucMongMuon: room.address // Ví dụ: "District 5, Ho Chi Minh City"
         }
       });
 
-      // 3. Nối quan hệ với Tài khoản
-      await tx.taiKhoan.update({
-        where: { idTaiKhoan: idTaiKhoanToken },
-        data: { phieuMoiNhatId: phieu.idPhieu }
-      });
-
-      // 4. Tạo Lịch xem phòng
+      // 2. Tạo Lịch xem phòng
       const lich = await tx.lichXemPhong.create({
         data: {
           idPhieu: phieu.idPhieu,
           thoiGianHen: new Date(bookingDetails.date),
-          diaDiem: "Tại: " + room.name, // Địa điểm xem chính là phòng đó
+          diaDiem: "Tại: " + room.name,
           ttLichHen: 'CHUA_XEM'
         }
       });
 
-      return { kh, phieu, lich };
+      return { phieu, lich };
     });
 
-    res.status(201).json({ success: true, data: result });
+    // Trả về success: true để Frontend biết mà chuyển trang
+    res.status(200).json({ success: true, data: result });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
