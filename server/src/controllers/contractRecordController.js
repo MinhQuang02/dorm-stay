@@ -194,23 +194,25 @@ const recordResidence = async (req, res) => {
   }
 };
 
-// FIND CUSTOMER BY CCCD OR SĐT
+// FIND CUSTOMER BY CCCD, SĐT hoặc hoTen + SĐT
 const findCustomer = async (req, res) => {
   try {
-    const { cccd, sdt } = req.query;
+    const { cccd, sdt, hoTen } = req.query;
 
-    if (!cccd && !sdt) {
-      return res.status(400).json({ success: false, message: "Vui lòng nhập CCCD hoặc SĐT." });
+    if (!cccd && !sdt && !(hoTen && sdt)) {
+      return res.status(400).json({ success: false, message: "Vui lòng nhập CCCD hoặc SĐT, hoặc hoTen và SĐT." });
     }
 
-    const khachHang = await prisma.khachHang.findFirst({
-      where: {
-        OR: [
-          cccd ? { cccd } : undefined,
-          sdt ? { sdt } : undefined,
-        ].filter(Boolean),
-      },
-    });
+    let where;
+    if (cccd) {
+      where = { cccd };
+    } else if (hoTen && sdt) {
+      where = { hoTen, sdt };
+    } else {
+      where = { sdt };
+    }
+
+    const khachHang = await prisma.khachHang.findFirst({ where });
 
     if (!khachHang) {
       return res.status(404).json({ success: false, message: "Không tìm thấy khách hàng." });

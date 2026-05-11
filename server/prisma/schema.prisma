@@ -69,41 +69,36 @@ model TaiKhoan {
 }
 
 model KhachHang {
-  idKhachHang    Int           @id @default(autoincrement())
-  hoTen          String
-  sdt            String
-  email          String?
-  gioiTinh       String?
-  ngaySinh       DateTime?
-  cccd           String        @unique
-  quocTich       String?
-  minhChungTC    String?
+  idKhachHang     Int           @id @default(autoincrement())
+  hoTen           String
+  sdt             String
+  // ... các trường khác giữ nguyên ...
+
+  // 1. Thêm trường lưu ID khóa ngoại
+  phieuYeuCauId   Int?          @unique // Thêm @unique nếu 1 phiếu chỉ thuộc về 1 khách
   
-  // Quan hệ 1-1 với TaiKhoan
-  idTaiKhoan     Int?          @unique
-  taiKhoan       TaiKhoan?     @relation(fields: [idTaiKhoan], references: [idTaiKhoan])
-  
-  // FK tới Phiếu yêu cầu hiện tại của khách
-  phieuYeuCauId  Int?
-  
-  // Các quan hệ khác
-  ttinDatCocs    TtinDatCoc[]
+  // 2. Thiết lập quan hệ trỏ đến model PhieuYeuCau
+  phieuYeuCau     PhieuYeuCau?  @relation(fields: [phieuYeuCauId], references: [idPhieu])
+
+  // Các quan hệ hiện có khác
+  idTaiKhoan      Int?          @unique
+  taiKhoan        TaiKhoan?     @relation(fields: [idTaiKhoan], references: [idTaiKhoan])
+  ttinDatCocs     TtinDatCoc[]
   chiTietHopDongs ChiTietHopDongThue[]
-  banGhiChiPhis  BanGhiChiPhi[]
+  banGhiChiPhis   BanGhiChiPhi[]
 }
 
 model PhieuYeuCau {
-  idPhieu         Int           @id @default(autoincrement())
+  idPhieu         Int             @id @default(autoincrement())
   hinhThucThue    HinhThucThue
   soNguoi         Int
-  khuVucMongMuon  String?
-  giaMongMuon     Float?
-  thoiDiemVao     DateTime?
-  thoiHanThue     Int?
-  yeuCauThem      String?
-  loaiPhong       String?
-  
-  taiKhoanMoiNhat TaiKhoan?     @relation("PhieuMoiNhat")
+  // ... các trường khác giữ nguyên ...
+
+  // 3. Khai báo quan hệ ngược (Virtual field)
+  khachHang       KhachHang?      // Nếu là quan hệ 1-1
+  // khachHangs    KhachHang[]    // Dùng dòng này nếu 1 phiếu có thể có nhiều khách hàng (1-n)
+
+  taiKhoanMoiNhat TaiKhoan?       @relation("PhieuMoiNhat")
   lichSuTaos      LichSuTaoPhieu[]
   lichXemPhongs   LichXemPhong[]
   hopDongs        HopDongThue[]

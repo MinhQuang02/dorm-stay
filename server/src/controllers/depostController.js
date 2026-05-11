@@ -1,7 +1,69 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// CALCULATE DEPOSIT REFUND OR DEBT
+// ==========================================
+// 1. TRA CỨU KHÁCH HÀNG & NHU CẦU THUÊ
+// ==========================================
+exports.lookupCustomer = async (req, res) => {
+  try {
+    const { hoTen, sdt } = req.query;
+
+    if (!hoTen || !sdt) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng cung cấp đầy đủ họ tên và số điện thoại.",
+      });
+    }
+
+    // Tìm Khách Hàng
+    const khachHang = await prisma.khachHang.findFirst({
+      where: {
+        hoTen: { equals: hoTen, mode: 'insensitive' },
+        sdt: sdt,
+      },
+    });
+
+    if (!khachHang) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy khách hàng.",
+      });
+    }
+
+    // Tìm Phiếu Yêu Cầu dựa trên phieuYeuCauId của khách hàng
+    let phieuYeuCau = null;
+    if (khachHang.phieuYeuCauId) {
+      
+      console.log(">>> Đang tìm Phiếu ID:", khachHang.phieuYeuCauId); // Thêm dòng này
+
+      phieuYeuCau = await prisma.phieuYeuCau.findUnique({
+        where: { idPhieu: khachHang.phieuYeuCauId },
+      });
+
+      console.log(">>> Kết quả tìm được:", phieuYeuCau); // Thêm dòng này
+    }
+    return res.status(200).json({
+      success: true,
+      data: {
+        ...khachHang,
+        phieuYeuCau: phieuYeuCau,
+      },
+    });
+
+  } catch (error) {
+    console.error("Lỗi API tra cứu khách hàng:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ nội bộ.",
+      error: error.message,
+    });
+  }
+};
+
+
+// ==========================================
+// 2. CALCULATE DEPOSIT REFUND OR DEBT
+// ==========================================
 exports.calculateDepositOut = async (req, res) => {
   try {
     const { userId } = req.body; // or khachHangId
@@ -119,7 +181,10 @@ exports.calculateDepositOut = async (req, res) => {
   }
 };
 
-// FINALIZE TRANSACTION (PRISMA TRANSACTION)
+
+// ==========================================
+// 3. FINALIZE TRANSACTION (PRISMA TRANSACTION)
+// ==========================================
 exports.finalizeDepositOut = async (req, res) => {
   const { customerId, contractId, bedId, finalBalance, isDebt } = req.body;
 

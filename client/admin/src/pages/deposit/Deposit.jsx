@@ -1,134 +1,290 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../../components/Layout/MainLayout';
 
 export default function Deposit() {
   const navigate = useNavigate();
+  
+  // States cho tra cứu khách hàng
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerLoading, setCustomerLoading] = useState(false);
+  const [customerInfo, setCustomerInfo] = useState(null);
+  
+  // States cho Điều kiện lưu trú
+  const [rentalTerms, setRentalTerms] = useState([]);
+  const [termsLoading, setTermsLoading] = useState(false);
+
+  // States cho chọn phòng
+  const [selectedRoom, setSelectedRoom] = useState('Room 301 - Studio (whole room)');
+  const [selectedStatus, setSelectedStatus] = useState('1');
+  const statusLabel = selectedStatus === '1' ? 'Nguyên căn' : 'Giường trống';
+
+  // Effect 1: Tra cứu thông tin khách hàng (debounce 800ms)
+  useEffect(() => {
+    const lookupCustomer = async () => {
+      if (!customerName.trim() || !customerPhone.trim()) {
+        setCustomerInfo(null);
+        return;
+      }
+
+      setCustomerLoading(true);
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/contracts/customer?hoTen=${encodeURIComponent(customerName.trim())}&sdt=${encodeURIComponent(customerPhone.trim())}`
+        );
+        
+        if (!res.ok) {
+          setCustomerInfo(null);
+          return;
+        }
+        
+        const data = await res.json();
+        
+        if (data.success && data.data) {
+          const customer = data.data;
+          const phieu = customer.phieuYeuCau || customer;
+
+          setCustomerInfo({
+            hoTen: customer.hoTen || 'N/A',
+            sdt: customer.sdt || 'N/A',
+            email: customer.email || 'N/A',
+            gioiTinh: customer.gioiTinh || 'N/A',
+            ngaySinh: customer.ngaySinh ? new Date(customer.ngaySinh).toLocaleDateString('vi-VN') : 'N/A',
+            cccd: customer.cccd || 'N/A',
+            quocTich: customer.quocTich || 'N/A',
+            
+            // PhieuYeuCau data
+            khuVucMongMuon: phieu.khuVucMongMuon || 'N/A',
+            giaMongMuon: phieu.giaMongMuon ? `${phieu.giaMongMuon.toLocaleString('vi-VN')} VND` : 'N/A',
+            loaiPhong: phieu.loaiPhong || 'N/A',
+            soNguoi: phieu.soNguoi ? `${phieu.soNguoi} người` : 'N/A',
+            hinhThucThue: phieu.hinhThucThue || 'N/A',
+            thoiDiemVao: phieu.thoiDiemVao ? new Date(phieu.thoiDiemVao).toLocaleDateString('vi-VN') : 'N/A',
+            thoiHanThue: phieu.thoiHanThue ? `${phieu.thoiHanThue} tháng` : 'N/A',
+            yeuCauThem: phieu.yeuCauThem || 'Không có',
+          });
+        } else {
+          setCustomerInfo(null);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tìm kiếm khách hàng:", error);
+        setCustomerInfo(null);
+      } finally {
+        setCustomerLoading(false);
+      }
+    };
+
+    const timer = setTimeout(lookupCustomer, 800);
+    return () => clearTimeout(timer);
+  }, [customerName, customerPhone]);
+
+  // Effect 2: Fetch Điều kiện lưu trú từ DB khi component mount
+  useEffect(() => {
+    const fetchTerms = async () => {
+      setTermsLoading(true);
+      try {
+        // SỬA LẠI ĐƯỜNG DẪN NÀY THEO API BACKEND CỦA BẠN (Ví dụ: /api/dieukienluutru)
+        const res = await fetch('http://localhost:5000/api/conditions'); 
+        
+        if (res.ok) {
+          const data = await res.json();
+          // Giả sử API trả về { success: true, data: [{ idDieuKien, tenDieuKien, moTa }, ...] }
+          if (data.success && Array.isArray(data.data)) {
+            setRentalTerms(data.data);
+          }
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải điều kiện lưu trú:", error);
+      } finally {
+        setTermsLoading(false);
+      }
+    };
+
+    fetchTerms();
+  }, []);
 
   return (
     <MainLayout title="Deposit Term Confirmation" mainClassName="flex-1 px-6 md:px-12 py-10 flex flex-col items-center">
       <div className="w-full max-w-4xl">
           
+          {/* SECTION 1: Customer Info */}
           <div className="mb-10">
-              <h2 className="text-xl font-bold text-black mb-4">1.Customer & Room Information</h2>
+              <h2 className="text-xl font-bold text-black mb-4">1. Customer & Room Information</h2>
               
-              <div className="bg-[#f7ece0] border border-[#ebd7c2] rounded-[24px] p-6 md:p-8 grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-12">
-                  
-                  <div className="flex flex-col gap-5">
+              <div className="bg-[#f7ece0] border border-[#ebd7c2] rounded-[24px] p-6 md:p-8 flex flex-col gap-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-12">
                       <div className="flex flex-col gap-1.5">
-                          <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider">Personal Info</span>
-                          <span className="text-[15px] font-bold text-black">Nguyen Van A</span>
+                          <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider">Customer Name</span>
+                          <input
+                              type="text"
+                              value={customerName}
+                              onChange={(e) => setCustomerName(e.target.value)}
+                              placeholder="Nhập tên khách hàng"
+                              className="w-full bg-white border border-gray-300 rounded-md px-3 py-2.5 text-gray-700 text-[14px] outline-none focus:border-[#cc6b34]"
+                          />
                       </div>
 
-                      <div className="flex flex-col gap-1.5">
-                          <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider">Gender</span>
-                          <span className="text-[15px] font-bold text-black">Man</span>
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                          <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider">Desired Area</span>
-                          <span className="text-[15px] font-bold text-black">District 10 or 5</span>
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                          <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider">Budget</span>
-                          <span className="text-[15px] font-bold text-black">5.000.000 - 6.000.000 VND</span>
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                          <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider">Special Preferences</span>
-                          <span className="text-[15px] font-bold text-black leading-snug">Free Curfew, Quiet Area, Parking Spot,<br />AC Equipped</span>
-                      </div>
-                  </div>
-
-                  <div className="flex flex-col gap-5">
                       <div className="flex flex-col gap-1.5">
                           <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider">Phone Number</span>
-                          <span className="text-[15px] font-bold text-black">0977 048 547</span>
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                          <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider">Expected Occupants</span>
-                          <span className="text-[15px] font-bold text-black">Studio with Balcony</span>
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                          <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider">Room Type</span>
-                          <span className="text-[15px] font-bold text-black">2 Persons</span>
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                          <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider">Move-In Date & Term</span>
-                          <span className="text-[15px] font-bold text-black">15/05/2026 - 12 Months</span>
+                          <input
+                              type="text"
+                              value={customerPhone}
+                              onChange={(e) => setCustomerPhone(e.target.value)}
+                              placeholder="Nhập số điện thoại"
+                              className="w-full bg-white border border-gray-300 rounded-md px-3 py-2.5 text-gray-700 text-[14px] outline-none focus:border-[#cc6b34]"
+                          />
                       </div>
                   </div>
 
+                  {customerLoading ? (
+                      <div className="rounded-md border border-dashed border-[#cc6b34] bg-white/50 p-6 text-center text-[14px] text-[#cc6b34] font-medium">
+                          Đang tải thông tin khách hàng...
+                      </div>
+                  ) : customerInfo ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-[#ebd7c2] pt-8">
+                          {/* Cột 1: Thông tin cá nhân */}
+                          <div className="flex flex-col gap-4">
+                              <h3 className="font-bold text-black text-sm uppercase border-b border-[#ebd7c2] pb-2">Thông tin cá nhân</h3>
+                              <div className="grid grid-cols-2 gap-4">
+                                  <div className="flex flex-col gap-1">
+                                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Họ & Tên</span>
+                                      <span className="text-[14px] font-bold text-black">{customerInfo.hoTen}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Số điện thoại</span>
+                                      <span className="text-[14px] font-bold text-black">{customerInfo.sdt}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">CCCD</span>
+                                      <span className="text-[14px] font-bold text-black">{customerInfo.cccd}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Giới tính</span>
+                                      <span className="text-[14px] font-bold text-black">{customerInfo.gioiTinh}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Ngày sinh</span>
+                                      <span className="text-[14px] font-bold text-black">{customerInfo.ngaySinh}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Email</span>
+                                      <span className="text-[14px] font-bold text-black truncate" title={customerInfo.email}>{customerInfo.email}</span>
+                                  </div>
+                              </div>
+                          </div>
+
+                          {/* Cột 2: Yêu cầu thuê */}
+                          <div className="flex flex-col gap-4">
+                              <h3 className="font-bold text-black text-sm uppercase border-b border-[#ebd7c2] pb-2">Nhu cầu thuê</h3>
+                              <div className="grid grid-cols-2 gap-4">
+                                  <div className="flex flex-col gap-1">
+                                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Loại phòng</span>
+                                      <span className="text-[14px] font-bold text-black">{customerInfo.loaiPhong}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Hình thức</span>
+                                      <span className="text-[14px] font-bold text-black">{customerInfo.hinhThucThue}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Khu vực</span>
+                                      <span className="text-[14px] font-bold text-black">{customerInfo.khuVucMongMuon}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Ngân sách</span>
+                                      <span className="text-[14px] font-bold text-black">{customerInfo.giaMongMuon}</span>
+                                  </div>
+                                  <div className="col-span-2 flex flex-col gap-1">
+                                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Yêu cầu thêm</span>
+                                      <span className="text-[14px] font-bold text-black leading-snug">{customerInfo.yeuCauThem}</span>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  ) : (
+                      <div className="rounded-md border border-dashed border-gray-300 bg-white p-6 text-center text-[14px] text-gray-500">
+                          {customerName.trim() && customerPhone.trim() 
+                              ? "Không tìm thấy dữ liệu khách hàng hợp lệ trong hệ thống."
+                              : "Nhập Tên và Số điện thoại khách hàng để tra cứu toàn bộ thông tin."}
+                      </div>
+                  )}
               </div>
           </div>
 
+          {/* SECTION 2: Rental Terms & Conditions */}
           <div className="mb-10">
-              <h2 className="text-xl font-bold text-black mb-4">2.Rental Terms & Conditions</h2>
+              <h2 className="text-xl font-bold text-black mb-4">2. Rental Terms & Conditions</h2>
               
               <div className="bg-[#f7ece0] border border-[#ebd7c2] rounded-[24px] p-6 md:p-8 flex flex-col gap-6">
-                  
-                  <div>
-                      <p className="text-[12px] font-semibold text-gray-500 mb-1.5">1. Deposit Amount & Deadline</p>
-                      <p className="text-[14px] font-bold text-black leading-snug">
-                          The deposit is calculated as 2 months' rent multiplied by the number of rented beds. Payment must be completed within 24 hours of the request.
-                      </p>
-                  </div>
-
-                  <div>
-                      <p className="text-[12px] font-semibold text-gray-500 mb-1.5">2. Move-in Requirements</p>
-                      <p className="text-[14px] font-bold text-black leading-snug">
-                          Tenants must satisfy all dorm regulations. If a tenant fails to meet these conditions, the management reserves the right to refuse signing the lease contract.
-                      </p>
-                  </div>
-
-                  <div>
-                      <p className="text-[12px] font-semibold text-gray-500 mb-1.5">3. Refund Policy</p>
-                      <div className="text-[14px] font-bold text-black leading-snug">
-                          <p>- Canceled before contract signing: 80% refund.</p>
-                          <p>- Early termination (stayed &lt; 6 months): 50% refund.</p>
-                          <p>- Early termination (stayed ≥ 6 months): 70% refund.</p>
-                          <p>- Completed lease term: 100% refund.</p>
-                      </div>
-                  </div>
-
-                  <div>
-                      <p className="text-[12px] font-semibold text-gray-500 mb-1.5">4. Deductions & Liabilities</p>
-                      <p className="text-[14px] font-bold text-black leading-snug">
-                          Any unpaid rent, utility debts, or property damages will be deducted from the refund amount.
-                      </p>
-                  </div>
-
+                  {termsLoading ? (
+                      <div className="text-[14px] text-gray-500 text-center py-4">Đang tải các điều khoản...</div>
+                  ) : rentalTerms.length > 0 ? (
+                      rentalTerms.map((term, index) => (
+                          <div key={term.idDieuKien || index}>
+                              <p className="text-[12px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                                  {index + 1}. {term.tenDieuKien}
+                              </p>
+                              {/* Xử lý hiển thị mô tả, nếu xuống dòng trong DB có thể dùng whitespace-pre-wrap */}
+                              <p className="text-[14px] font-bold text-black leading-snug whitespace-pre-wrap">
+                                  {term.moTa || "Chưa có mô tả chi tiết."}
+                              </p>
+                          </div>
+                      ))
+                  ) : (
+                      <div className="text-[14px] text-gray-500 text-center py-4">Chưa có điều kiện lưu trú nào được thiết lập.</div>
+                  )}
               </div>
           </div>
 
+          {/* SECTION 3: Target Room & Final Submit */}
           <div className="flex flex-col gap-4">
               <h3 className="font-bold text-black text-[15px]">Target Room / Bed</h3>
               
+              <p className="text-[13px] text-gray-500">Chọn phòng ở ô đầu và chọn trạng thái ở ô bên cạnh.</p>
+
               <div className="flex flex-wrap items-center gap-4">
                   <div className="relative w-[280px]">
-                      <select className="w-full appearance-none bg-transparent border border-gray-300 rounded-md px-3 py-2.5 text-gray-500 text-[14px] outline-none">
+                      <select
+                          value={selectedRoom}
+                          onChange={(e) => setSelectedRoom(e.target.value)}
+                          className="w-full appearance-none bg-transparent border border-gray-300 rounded-md px-3 py-2.5 text-gray-500 text-[14px] outline-none"
+                      >
                           <option>Room 301 - Studio (whole room)</option>
+                          <option>Room 302 - Private Bed</option>
+                          <option>Room 305 - Shared Bed</option>
                       </select>
                       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
                           <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                       </div>
                   </div>
+
+                  <div className="relative w-[280px]">
+                      <select
+                          value={selectedStatus}
+                          onChange={(e) => setSelectedStatus(e.target.value)}
+                          className="w-full appearance-none bg-transparent border border-gray-300 rounded-md px-3 py-2.5 text-gray-500 text-[14px] outline-none"
+                      >
+                          <option value="1">1 - Nguyên căn</option>
+                          <option value="2">2 - Giường trống</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                          <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                      </div>
+                  </div>
+
                   <button className="bg-white border border-[#faeddb] text-[#cc6b34] font-bold text-[14px] px-4 py-2.5 rounded-md hover:bg-gray-50 transition-colors">
-                      Check Availabbility
+                      Check Availability
                   </button>
               </div>
 
               <div className="mt-1">
                   <div className="bg-[#faeddb] border border-[#f0dfc8] text-black font-bold text-[14px] px-5 py-3 rounded-md inline-block">
-                      Room 301 is available. Ready to confirm.
+                      {selectedRoom} - {statusLabel} is selected.
                   </div>
               </div>
 
               <div className="bg-[#f2f2f2] border-[2px] border-dashed border-[#d1d1d1] rounded-lg p-5 flex items-center gap-5 mt-6">
-                  <input type="checkbox" className="custom-checkbox shrink-0" />
+                  <input type="checkbox" className="custom-checkbox shrink-0 w-5 h-5 accent-[#cc6b34]" />
                   <span className="text-[14px] font-bold text-black">I verify that the customer meets all conditions and agrees to the terms above.</span>
               </div>
 

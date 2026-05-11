@@ -60,19 +60,59 @@
 // }
 
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import MainLayout from '../../components/Layout/MainLayout';
 
 export default function RegistrationForm() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [customerLoading, setCustomerLoading] = useState(false);
+  const [customerFound, setCustomerFound] = useState(null);
   const [formData, setFormData] = useState({
     hoTen: '',
     cccd: '',
     sdt: '',
     email: ''
   });
+
+  useEffect(() => {
+    const lookupCustomer = async () => {
+      if (!formData.hoTen.trim() || !formData.sdt.trim()) {
+        setCustomerFound(null);
+        return;
+      }
+
+      setCustomerLoading(true);
+      try {
+        const res = await fetch(
+          `http://127.0.0.1:5000/api/contracts/customer?hoTen=${encodeURIComponent(formData.hoTen.trim())}&sdt=${encodeURIComponent(formData.sdt.trim())}`
+        );
+        if (!res.ok) {
+          setCustomerFound(null);
+          return;
+        }
+        const data = await res.json();
+        if (data.success) {
+          setCustomerFound(data.data);
+          setFormData((prev) => ({
+            ...prev,
+            cccd: data.data.cccd || prev.cccd,
+            email: data.data.email || prev.email,
+          }));
+        } else {
+          setCustomerFound(null);
+        }
+      } catch (error) {
+        setCustomerFound(null);
+      } finally {
+        setCustomerLoading(false);
+      }
+    };
+
+    const timer = setTimeout(lookupCustomer, 500);
+    return () => clearTimeout(timer);
+  }, [formData.hoTen, formData.sdt]);
 
   const handleNext = async (e) => {
     e.preventDefault();
@@ -156,6 +196,20 @@ export default function RegistrationForm() {
               className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm"
             />
           </div>
+
+          {customerLoading ? (
+            <div className="rounded-xl bg-[#f9fafb] border border-gray-200 p-4 text-sm text-gray-600">
+              Đang kiểm tra thông tin khách hàng...
+            </div>
+          ) : customerFound ? (
+            <div className="rounded-xl bg-[#ecfdf5] border border-[#a7f3d0] p-4 text-sm text-green-700">
+              Đã tìm thấy khách hàng. Thông tin tự động cập nhật từ hệ thống.
+            </div>
+          ) : formData.hoTen.trim() && formData.sdt.trim() ? (
+            <div className="rounded-xl bg-[#fffbeb] border border-[#fde68a] p-4 text-sm text-[#92400e]">
+              Chưa tìm thấy khách hàng với tên và số điện thoại này.
+            </div>
+          ) : null}
 
           <div className="flex justify-between items-center mt-12">
             <Link to="/" className="px-12 py-3 rounded-lg border border-[#cc6b34] text-[#cc6b34] text-sm font-medium">
