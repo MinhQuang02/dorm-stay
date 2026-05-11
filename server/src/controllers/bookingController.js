@@ -91,32 +91,17 @@ exports.finalizeBooking = async (req, res) => {
   try {
     const { phieuId, room, bookingDetails } = req.body;
 
-    const result = await prisma.$transaction(async (tx) => {
-      // CẬP NHẬT PHIẾU CŨ: Thay "Đang chọn..." bằng tên phòng thật
-      const phieu = await tx.phieuYeuCau.update({
-        where: { idPhieu: parseInt(phieuId) },
-        data: {
-          loaiPhong: room.name,        // Ghi đè: "Phòng Master tầng 10"
-          khuVucMongMuon: room.address // Ghi đè địa chỉ
-        }
-      });
-
-      // Tạo lịch hẹn
-      const lich = await tx.lichXemPhong.create({
-        data: {
-          idPhieu: phieu.idPhieu,
-          thoiGianHen: new Date(bookingDetails.date),
-          diaDiem: "Tại: " + room.name,
-          ttLichHen: 'CHUA_XEM'
-        }
-      });
-
-      return { phieu, lich };
+    await prisma.phieuYeuCau.update({
+      where: { idPhieu: parseInt(phieuId) },
+      data: {
+        loaiPhong: room.name,
+        khuVucMongMuon: room.address,
+        thoiDiemVao: new Date(bookingDetails.date) // Lưu vào "Ngày đề xuất"
+      }
     });
 
-    res.status(200).json({ success: true, data: result });
+    res.status(200).json({ success: true });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

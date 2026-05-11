@@ -2,21 +2,14 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // 1. Lấy danh sách phiếu CHƯA XEM PHÒNG (Dùng cho Appointment.jsx)
-// 1. Lấy danh sách phiếu CHƯA XEM PHÒNG (Dùng cho Appointment.jsx)
+
 exports.getPendingRequests = async (req, res) => {
   try {
     const requests = await prisma.phieuYeuCau.findMany({
-      where: {
-        OR: [
-          { lichXemPhongs: { none: {} } }, 
-          { lichXemPhongs: { some: { ttLichHen: 'CHUA_XEM' } } }
-        ]
-      },
       include: {
         taiKhoanMoiNhat: { include: { khachHang: true } },
         lichXemPhongs: {
-          where: { ttLichHen: 'CHUA_XEM' },
-          orderBy: { thoiGianHen: 'asc' } // Lấy lịch hẹn gần nhất
+          where: { ttLichHen: 'CHUA_XEM' }
         }
       },
       orderBy: { idPhieu: 'desc' }
@@ -26,19 +19,50 @@ exports.getPendingRequests = async (req, res) => {
       const activeSchedule = p.lichXemPhongs[0];
       return {
         idPhieu: p.idPhieu,
-        idLichHen: activeSchedule?.idLichHen || null,
         customerName: p.taiKhoanMoiNhat?.khachHang?.hoTen || "N/A",
         phone: p.taiKhoanMoiNhat?.khachHang?.sdt || "N/A",
-        
+        // Ưu tiên hiện ngày Admin đã chốt, nếu chưa có thì hiện ngày khách đề xuất
         proposedDate: activeSchedule?.thoiGianHen || p.thoiDiemVao || "Flexible",
-        
-        hasSchedule: !!activeSchedule
+        // Chìa khóa: Nếu ĐÃ CÓ bản ghi trong LichXemPhong thì hasSchedule = true (Hiện EDIT + Tích xanh)
+        hasSchedule: !!activeSchedule, 
+        idLichHen: activeSchedule?.idLichHen || null
       };
     });
-
     res.json(formatted);
+  } catch (e) { res.status(500).json({ error: "Lỗi." }); }
+};
+
+// 2. Admin nhấn SAVE & SEND (Tạo hoặc cập nhật lịch hẹn)
+exports.createAppointment = async (req, res) => {
+  const { idPhieu, date, location } = req.body;
+  try {
+    // Tìm xem phiếu này đã có lịch hẹn chưa
+    const existingSchedule = await prisma.lichXemPhong.findFirst({
+      where: { idPhieu: parseInt(idPhieu), ttLichHen: 'CHUA_XEM' }
+    });
+
+    let appointment;
+    if (existingSchedule) {
+      // Nếu đã có (đang nhấn nút EDIT), thì cập nhật lại giờ/chỗ
+      appointment = await prisma.lichXemPhong.update({
+        where: { idLichHen: existingSchedule.idLichHen },
+        data: { thoiGianHen: new Date(date), diaDiem: location }
+      });
+    } else {
+      // Nếu chưa có (đang nhấn nút SCHEDULE), thì tạo mới
+      appointment = await prisma.lichXemPhong.create({
+        data: {
+          idPhieu: parseInt(idPhieu),
+          thoiGianHen: new Date(date),
+          diaDiem: location,
+          ttLichHen: 'CHUA_XEM'
+        }
+      });
+    }
+
+    res.status(201).json({ success: true, appointment });
   } catch (error) {
-    res.status(500).json({ error: "Lỗi Server." });
+    res.status(500).json({ error: "Lỗi lưu lịch hẹn." });
   }
 };
 
