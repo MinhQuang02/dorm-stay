@@ -86,6 +86,60 @@ exports.searchRooms = async (req, res) => {
   }
 };
 
+// UPDATE BOOKING / RENTAL INFO (Used by DepositUpdate page)
+exports.updateBookingInfo = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.body?.userId;
+    if (!userId) return res.status(400).json({ error: 'Missing userId' });
+
+    const { room, bedId, startDate, durationMonths, price, loaiPhong } = req.body;
+
+    const customer = await prisma.khachHang.findFirst({
+      where: { idTaiKhoan: parseInt(userId) },
+      include: { taiKhoan: true }
+    });
+
+    if (!customer) return res.status(404).json({ error: 'Customer not found.' });
+
+    const phieuId = customer.phieuYeuCauId || customer.taiKhoan?.phieuMoiNhatId;
+
+    const result = await prisma.$transaction(async (tx) => {
+      let updatedPhieu = null;
+      if (phieuId) {
+        updatedPhieu = await tx.phieuYeuCau.update({
+          where: { idPhieu: parseInt(phieuId) },
+          data: {
+            loaiPhong: loaiPhong || room?.name || undefined,
+            giaMongMuon: price ? parseFloat(price) : undefined,
+            thoiDiemVao: startDate ? new Date(startDate) : undefined,
+            thoiHanThue: durationMonths ? parseInt(durationMonths, 10) : undefined
+          }
+        });
+      }
+
+      let reserved = null;
+      if (bedId) {
+        // Reserve bed atomically if available
+        const updated = await tx.giuong.updateMany({
+          where: { idGiuong: parseInt(bedId, 10), trangThai: true, idKhachHang: null },
+          data: { trangThai: false, idKhachHang: customer.idKhachHang }
+        });
+        if (updated.count === 0) {
+          throw new Error('Selected bed is not available');
+        }
+        reserved = await tx.giuong.findUnique({ where: { idGiuong: parseInt(bedId, 10) } });
+      }
+
+      return { updatedPhieu, reserved };
+    });
+
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    console.error('updateBookingInfo error:', err);
+    return res.status(500).json({ error: err.message || 'Server error updating booking info.' });
+  }
+};
+
 // 3. Xác nhận đặt lịch hẹn xem phòng (RegisterBooking.jsx)
 exports.finalizeBooking = async (req, res) => {
   try {

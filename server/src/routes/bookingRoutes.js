@@ -14,5 +14,9 @@ router.get('/search-rooms', bookingController.searchRooms);
 // URL: POST /api/booking/finalize
 router.post('/finalize', bookingController.finalizeBooking);
 
+// 4. Cập nhật thông tin thuê (Deposit update)
+// URL: POST /api/booking/update-booking
+router.post('/update-booking', bookingController.updateBookingInfo);
+
 
 module.exports = router;

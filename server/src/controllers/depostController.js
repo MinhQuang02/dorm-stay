@@ -14,9 +14,9 @@ const lookupCustomer = async (req, res) => {
       where: {
         hoTen: {
           equals: hoTen.trim(),
-          mode: "insensitive",
+          mode: 'insensitive'
         },
-        sdt: sdt.trim(),
+        sdt: sdt.trim()
       },
       include: {
         phieuYeuCau: true,
@@ -51,11 +51,11 @@ const getConditions = async (req, res) => {
       select: {
         idDieuKien: true,
         tenDieuKien: true,
-        moTa: true,
+        moTa: true
       },
       orderBy: {
-        idDieuKien: 'asc',
-      },
+        idDieuKien: 'asc'
+      }
     });
 
     res.json({ success: true, data: conditions });

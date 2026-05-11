@@ -1,7 +1,21 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '../../components/Layout/MainLayout';
 
+function formatCurrency(value) {
+  return Number(value || 0).toLocaleString('vi-VN') + ' VND';
+}
+
 export default function DepositSuccess() {
+  const [invoice, setInvoice] = useState(null);
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem('depositSuccessInvoice');
+    if (raw) {
+      setInvoice(JSON.parse(raw));
+    }
+  }, []);
+
   return (
     <MainLayout title="Deposit Payment" mainClassName="flex-1 px-6 md:px-12 mt-12 flex flex-col items-center pb-10">
       {/* Success Header */}
@@ -32,10 +46,10 @@ export default function DepositSuccess() {
 
         <div className="space-y-6">
           {[
-            { label: 'Transaction ID', value: 'TXN-9823048571', right: true },
-            { label: 'Payment Date', value: 'April 10, 2026 - 14:25', right: true },
-            { label: 'Payment Method', value: 'Bank Transfer (Vietcombank)', right: true },
-            { label: 'Room / Bed', value: 'Private Office Room - A101', right: true },
+            { label: 'Transaction ID', value: invoice?.invoiceId ? `HD-${invoice.invoiceId}` : 'N/A', right: true },
+            { label: 'Payment Date', value: invoice?.paidAt ? new Date(invoice.paidAt).toLocaleString('vi-VN') : 'N/A', right: true },
+            { label: 'Payment Method', value: invoice?.paymentMethod === 'CHUYEN_KHOAN' ? 'Bank Transfer' : 'Cash', right: true },
+            { label: 'Room / Bed', value: `${invoice?.roomType || 'N/A'} - ${invoice?.bedId || 'N/A'}`, right: true },
           ].map((item, i) => (
             <div key={i} className="grid grid-cols-2 gap-4 border-b border-gray-50 pb-4">
               <p className="text-[13px] text-gray-400">{item.label}</p>
@@ -44,7 +58,7 @@ export default function DepositSuccess() {
           ))}
           <div className="grid grid-cols-2 gap-4 pt-2">
             <p className="text-[15px] font-bold text-gray-900">Total Amount Paid</p>
-            <p className="text-xl font-black text-[#cc6b34] text-right">3,000,000 VND</p>
+            <p className="text-xl font-black text-[#cc6b34] text-right">{formatCurrency(invoice?.amount)}</p>
           </div>
         </div>
 
