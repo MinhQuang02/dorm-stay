@@ -17,7 +17,7 @@ exports.submitRegistration = async (req, res) => {
       return res.status(400).json({ error: "Thiếu trường dữ liệu 'cccd'. Vui lòng kiểm tra lại Frontend." });
     }
 
-    const idTaiKhoanToken = 464;
+    const idTaiKhoanToken = parseInt(req.user?.id || req.body?.userId || 464, 10);
 
     const result = await prisma.$transaction(async (tx) => {
       // Dùng idTaiKhoan để upsert như mình đã hướng dẫn ở bước trước
@@ -86,54 +86,50 @@ exports.searchRooms = async (req, res) => {
   }
 };
 
-// UPDATE BOOKING / RENTAL INFO (Used by DepositUpdate page)
+// UPDATE BOOKING / RENTAL INFO (Read & update from approved registration request)
 exports.updateBookingInfo = async (req, res) => {
   try {
     const userId = req.user?.id || req.body?.userId;
     if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
-    const { room, bedId, startDate, durationMonths, price, loaiPhong } = req.body;
+    const { room, startDate, durationMonths, price, loaiPhong } = req.body || {};
 
     const customer = await prisma.khachHang.findFirst({
-      where: { idTaiKhoan: parseInt(userId) },
+      where: { idTaiKhoan: parseInt(userId, 10) },
       include: { taiKhoan: true }
     });
 
     if (!customer) return res.status(404).json({ error: 'Customer not found.' });
 
-    const phieuId = customer.phieuYeuCauId || customer.taiKhoan?.phieuMoiNhatId;
+    const phieuId = customer.taiKhoan?.phieuMoiNhatId || customer.phieuYeuCauId;
+    if (!phieuId) {
+      return res.status(400).json({ error: 'Không tìm thấy phiếu đăng ký để cập nhật.' });
+    }
 
-    const result = await prisma.$transaction(async (tx) => {
-      let updatedPhieu = null;
-      if (phieuId) {
-        updatedPhieu = await tx.phieuYeuCau.update({
-          where: { idPhieu: parseInt(phieuId) },
-          data: {
-            loaiPhong: loaiPhong || room?.name || undefined,
-            giaMongMuon: price ? parseFloat(price) : undefined,
-            thoiDiemVao: startDate ? new Date(startDate) : undefined,
-            thoiHanThue: durationMonths ? parseInt(durationMonths, 10) : undefined
-          }
+    const updateData = {
+      loaiPhong: loaiPhong || room?.name || undefined,
+      giaMongMuon: price ? parseFloat(price) : undefined,
+      thoiDiemVao: startDate ? new Date(startDate) : undefined,
+      thoiHanThue: durationMonths ? parseInt(durationMonths, 10) : undefined
+    };
+
+    const updatedPhieu = await prisma.$transaction(async (tx) => {
+      const updated = await tx.phieuYeuCau.update({
+        where: { idPhieu: parseInt(phieuId, 10) },
+        data: updateData
+      });
+
+      if (!customer.phieuYeuCauId) {
+        await tx.khachHang.update({
+          where: { idKhachHang: customer.idKhachHang },
+          data: { phieuYeuCauId: updated.idPhieu }
         });
       }
 
-      let reserved = null;
-      if (bedId) {
-        // Reserve bed atomically if available
-        const updated = await tx.giuong.updateMany({
-          where: { idGiuong: parseInt(bedId, 10), trangThai: true, idKhachHang: null },
-          data: { trangThai: false, idKhachHang: customer.idKhachHang }
-        });
-        if (updated.count === 0) {
-          throw new Error('Selected bed is not available');
-        }
-        reserved = await tx.giuong.findUnique({ where: { idGiuong: parseInt(bedId, 10) } });
-      }
-
-      return { updatedPhieu, reserved };
+      return updated;
     });
 
-    return res.json({ success: true, data: result });
+    return res.json({ success: true, data: { updatedPhieu } });
   } catch (err) {
     console.error('updateBookingInfo error:', err);
     return res.status(500).json({ error: err.message || 'Server error updating booking info.' });
