@@ -8,9 +8,8 @@ const getHandoverContracts = async (req, res) => {
 
     const hopDongs = await prisma.hopDongThue.findMany({
       where: {
-        // Chỉ lấy hợp đồng đã có ChiTietHopDongThue (đã ghi nhận cư trú)
+        // 1. CHỖ QUAN TRỌNG: Bỏ điều kiện lọc 'HET_HAN' để nó hiện hết
         chiTiets: { some: {} },
-        trangThai: { not: 'HET_HAN' },
       },
       include: {
         chiTiets: {
@@ -24,9 +23,8 @@ const getHandoverContracts = async (req, res) => {
       orderBy: { ngayLap: 'desc' },
     });
 
-    // Flatten: mỗi ChiTiet là 1 row (1 khách/1 giường trong hợp đồng)
     let rows = hopDongs.flatMap((hd) =>
-      hd.chiTiets.map((ct) => ({
+      hd.chiTiets.map((ct, index) => ({
         idHopDong:    hd.idHopDong,
         trangThai:    hd.trangThai,
         ngayBatDau:   hd.ngayBatDau,
@@ -37,32 +35,32 @@ const getHandoverContracts = async (req, res) => {
         idGiuong:     ct.giuong?.idGiuong         || null,
         customerName: ct.khachHang?.hoTen         || 'N/A',
         customerId:   ct.khachHang?.idKhachHang   || null,
-        // Đã có biên bản bàn giao chưa
-        daBanGiao:    hd.bienBans.length > 0,
+        
+        // Nếu số lượng biên bản ít hơn số lượng người cư trú, 
+        // những người mới được thêm vào sau (có index cao hơn) sẽ chưa được bàn giao (false).
+        daBanGiao:    index < hd.bienBans.length,
       }))
     );
 
-    // Search
+    // 2. Sửa lại Search: Bỏ chữ "r" để tìm kiếm khớp với Frontend
     if (search && search.trim()) {
       const q = search.trim().toLowerCase();
       rows = rows.filter(
         (r) =>
           String(r.idHopDong).includes(q) ||
           (r.customerName || '').toLowerCase().includes(q) ||
-          `r${r.idPhong}`.includes(q) ||
+          String(r.idPhong).includes(q) || 
           (r.loaiPhong || '').toLowerCase().includes(q)
       );
     }
 
-    // Sort
+    // (Phần logic Sort giữ nguyên...)
     if (sortBy === 'date') {
       rows.sort((a, b) => new Date(b.ngayBatDau) - new Date(a.ngayBatDau));
     } else if (sortBy === 'status') {
-      // Overdue trước, rồi Occupied, rồi Available
       const order = { OVERDUE: 0, DA_THUE: 1, TRONG: 2 };
       rows.sort((a, b) => (order[a.trangThai] ?? 9) - (order[b.trangThai] ?? 9));
     } else {
-      // Default: newest idHopDong
       rows.sort((a, b) => b.idHopDong - a.idHopDong);
     }
 
@@ -104,6 +102,7 @@ const getAssetsByRoom = async (req, res) => {
 };
 
 // CREATE HANDOVER RECORD
+// CREATE HANDOVER RECORD
 const createHandoverRecord = async (req, res) => {
   try {
     const { idHopDong, noiDung, trangThai, assets } = req.body;
@@ -111,20 +110,26 @@ const createHandoverRecord = async (req, res) => {
     if (!idHopDong) {
       return res.status(400).json({ success: false, message: 'Missing required field: idHopDong.' });
     }
-    if (!assets || !Array.isArray(assets) || assets.length === 0) {
-      return res.status(400).json({ success: false, message: 'Asset list is required.' });
+    if (!assets || !Array.isArray(assets)) {
+      return res.status(400).json({ success: false, message: 'Asset list is invalid.' });
     }
 
-    // Check contract exists
+    // 1. LẤY THÊM CHI TIẾT HỢP ĐỒNG để biết khách đang thuê giường/phòng nào
     const hopDong = await prisma.hopDongThue.findUnique({
       where: { idHopDong: parseInt(idHopDong) },
+      include: {
+        chiTiets: {
+          include: { giuong: true }
+        }
+      }
     });
+
     if (!hopDong) {
       return res.status(404).json({ success: false, message: 'Contract not found.' });
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. INSERT BienBanBanGiao
+      // 2. TẠO BIÊN BẢN BÀN GIAO
       const bienBan = await tx.bienBanBanGiao.create({
         data: {
           idHopDong: parseInt(idHopDong),
@@ -133,27 +138,57 @@ const createHandoverRecord = async (req, res) => {
         },
       });
 
-      // 2. INSERT ChiTietBanGiao for each asset
-      await tx.chiTietBanGiao.createMany({
-        data: assets.map((a) => ({
-          idBienBan: bienBan.idBienBan,
-          idTaiSan:  parseInt(a.idTaiSan),
-          tinhTrang: a.tinhTrang || 'BINH_THUONG',
-          hdSuDung:  a.hdSuDung  || null,
-        })),
+      // 3. LƯU CHI TIẾT TÀI SẢN (Nếu có)
+      if (assets.length > 0) {
+        await tx.chiTietBanGiao.createMany({
+          data: assets.map((a) => ({
+            idBienBan: bienBan.idBienBan,
+            idTaiSan:  parseInt(a.idTaiSan),
+            tinhTrang: a.tinhTrang || 'BINH_THUONG',
+            hdSuDung:  a.hdSuDung  || null,
+          })),
+        });
+
+        // Cập nhật tình trạng bên bảng TaiSan
+        await Promise.all(
+          assets.map((a) =>
+            tx.taiSan.update({
+              where: { idTaiSan: parseInt(a.idTaiSan) },
+              data:  { tinhTrang: a.tinhTrang || 'BINH_THUONG' },
+            })
+          )
+        );
+      }
+
+      // 4. 🛑 LOGIC MỚI: GIẢI PHÓNG GIƯỜNG (TRẢ TRẠNG THÁI VỀ AVAILABLE)
+      if (hopDong.hinhThuc === 'NGUYEN_PHONG') {
+        // Nếu lúc trước thuê nguyên phòng -> Mở khóa toàn bộ giường trong phòng đó
+        const idPhong = hopDong.chiTiets[0]?.giuong?.idPhong;
+        if (idPhong) {
+          await tx.giuong.updateMany({
+            where: { idPhong: parseInt(idPhong) },
+            data: { trangThai: true } // true = Trống (Available)
+          });
+        }
+      } else {
+        // Nếu ở ghép -> Chỉ mở khóa đúng những giường mà khách này đã thuê
+        const giuongIds = hopDong.chiTiets.map((ct) => ct.idGiuong).filter(id => id != null);
+        if (giuongIds.length > 0) {
+          await tx.giuong.updateMany({
+            where: { idGiuong: { in: giuongIds } },
+            data: { trangThai: true } // true = Trống (Available)
+          });
+        }
+      }
+
+      // 5. CẬP NHẬT TRẠNG THÁI HỢP ĐỒNG THÀNH "HẾT HẠN/THANH LÝ
+      // Khách trả phòng rồi thì hợp đồng cũng phải đóng lại để chuẩn luồng dữ liệu
+      await tx.hopDongThue.update({
+        where: { idHopDong: parseInt(idHopDong) },
+        data: { trangThai: 'HET_HAN' } 
       });
 
-      // 3. UPDATE tinhTrang from each asset in TaiSan
-      await Promise.all(
-        assets.map((a) =>
-          tx.taiSan.update({
-            where: { idTaiSan: parseInt(a.idTaiSan) },
-            data:  { tinhTrang: a.tinhTrang || 'BINH_THUONG' },
-          })
-        )
-      );
-
-      // 4. Return full BienBan with chiTiets
+      // 6. Trả về kết quả
       return tx.bienBanBanGiao.findUnique({
         where: { idBienBan: bienBan.idBienBan },
         include: {

@@ -4,10 +4,11 @@ import MainLayout from '../../components/Layout/MainLayout';
 
 const API_BASE = "http://localhost:5000/api";
 
+// 1. Cập nhật lại bộ màu sắc theo đúng ý bạn
 const STATUS_LABEL = {
-  DA_THUE:  { text: 'Occupied', bg: 'bg-blue-50',    dot: 'bg-blue-400',   text_color: 'text-blue-600'   },
-  TRONG:    { text: 'Available',bg: 'bg-emerald-50', dot: 'bg-emerald-500', text_color: 'text-emerald-600'},
-  OVERDUE:  { text: 'Overdue',  bg: 'bg-red-50',     dot: 'bg-red-400',    text_color: 'text-red-500'    },
+  OCCUPYING: { text: 'Occupying', bg: 'bg-yellow-50',  dot: 'bg-yellow-500', text_color: 'text-yellow-600'  },
+  EXPIRED:   { text: 'Expired',   bg: 'bg-red-50',     dot: 'bg-red-500',    text_color: 'text-red-600'     },
+  DONE:      { text: 'Done',      bg: 'bg-emerald-50', dot: 'bg-emerald-500', text_color: 'text-emerald-600' },
 };
 
 export default function HandoverList() {
@@ -37,6 +38,26 @@ export default function HandoverList() {
     }
   };
 
+  // 2. Hàm tính toán trạng thái động
+  const getComputedStatus = (contract) => {
+    // Nếu đã làm biên bản bàn giao -> Done
+    if (contract.daBanGiao) return 'DONE';
+
+    // Nếu chưa bàn giao, kiểm tra xem có quá hạn không
+    if (contract.ngayKetThuc) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Đưa về đầu ngày để so sánh chuẩn xác
+      
+      const expDate = new Date(contract.ngayKetThuc);
+      expDate.setHours(0, 0, 0, 0);
+
+      if (today > expDate) return 'EXPIRED';
+    }
+
+    // Còn lại là đang thuê bình thường
+    return 'OCCUPYING';
+  };
+
   // ── Filter ──
   const filtered = contracts
     .filter((r) => {
@@ -45,20 +66,23 @@ export default function HandoverList() {
       return (
         String(r.idHopDong).includes(q) ||
         (r.customerName || '').toLowerCase().includes(q) ||
-        String(r.idPhong).includes(q) || // Đã xóa check chữ "r"
+        String(r.idPhong).includes(q) ||
         (r.loaiPhong || '').toLowerCase().includes(q)
       );
     })
     .sort((a, b) => {
-      if (sortBy === 'date')   return new Date(b.ngayBatDau) - new Date(a.ngayBatDau);
+      if (sortBy === 'date') return new Date(b.ngayBatDau) - new Date(a.ngayBatDau);
       if (sortBy === 'status') {
-        const order = { OVERDUE: 0, DA_THUE: 1, TRONG: 2 };
-        return (order[a.trangThai] ?? 9) - (order[b.trangThai] ?? 9);
+        // Sắp xếp ưu tiên: Expired -> Occupying -> Done
+        const order = { EXPIRED: 0, OCCUPYING: 1, DONE: 2 };
+        const statusA = getComputedStatus(a);
+        const statusB = getComputedStatus(b);
+        return (order[statusA] ?? 9) - (order[statusB] ?? 9);
       }
       return b.idHopDong - a.idHopDong;
     });
 
-  // ── Pagination Logic (Giống RoomList) ──
+  // ── Pagination Logic ──
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginated = filtered.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -93,10 +117,10 @@ export default function HandoverList() {
     <MainLayout title="Apartment Handover Record">
       <div className="flex-1 px-4 md:px-8 py-10 bg-[#fbfbfa] min-h-screen flex flex-col items-center">
         
-        {/* KHUNG TRẮNG CHỨA TẤT CẢ (Giống RoomList) */}
+        {/* KHUNG TRẮNG CHỨA TẤT CẢ */}
         <div className="w-full bg-white rounded-[24px] p-6 md:p-10 shadow-sm border border-gray-100">
           
-          {/* Header: Title + Search + Sort */}
+          {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
             <h2 className="text-xl font-bold text-black uppercase tracking-wide">HANDOVER LIST</h2>
             
@@ -148,15 +172,14 @@ export default function HandoverList() {
                   <tr><td colSpan="6" className="text-center py-10 text-gray-500">No contracts found</td></tr>
                 ) : (
                   paginated.map((contract) => {
-                    const statusInfo = STATUS_LABEL[contract.trangThai] || {
-                      text: contract.trangThai, bg: 'bg-gray-50',
-                      dot: 'bg-gray-400', text_color: 'text-gray-500',
-                    };
+                    // 3. Gọi hàm tính toán trạng thái động cho từng row
+                    const computedStatus = getComputedStatus(contract);
+                    const statusInfo = STATUS_LABEL[computedStatus];
 
                     return (
                       <tr key={`${contract.idHopDong}-${contract.idGiuong}`} className="border-b border-gray-50 last:border-none hover:bg-gray-50/50 transition-colors">
                         <td className="py-5 font-medium text-gray-800 text-[13px]">
-                          {contract.idPhong} {/* Đã bỏ chữ R */}
+                          {contract.idPhong}
                           {contract.idGiuong && (
                             <span className="ml-2 text-[11px] font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
                               Bed {contract.idGiuong}
@@ -167,18 +190,23 @@ export default function HandoverList() {
                         <td className="py-5 text-gray-700 text-[13px]">{formatDate(contract.ngayBatDau)}</td>
                         <td className="py-5 text-gray-700 text-[13px]">{formatDate(contract.ngayKetThuc)}</td>
                         <td className="py-5 text-[13px]">
-                          {/* Vẫn giữ cái badge status cho đẹp nhưng chỉnh padding nhỏ lại xíu */}
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusInfo.bg} ${statusInfo.text_color}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`} />
                             {statusInfo.text}
                           </span>
                         </td>
                         <td className="py-5 text-center">
+                          {/* 4. Vô hiệu hóa nút bấm nếu đã Done */}
                           <button
                             onClick={() => handleRecord(contract)}
-                            className="px-5 py-2 rounded border text-[11px] uppercase font-bold transition-all tracking-wide bg-[#faeddb] text-[#d58047] border-[#efd9c2] hover:bg-[#f2dfc5]"
+                            disabled={computedStatus === 'DONE'}
+                            className={`px-5 py-2 rounded border text-[11px] uppercase font-bold transition-all tracking-wide ${
+                              computedStatus === 'DONE' 
+                                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-70" 
+                                : "bg-[#faeddb] text-[#d58047] border-[#efd9c2] hover:bg-[#f2dfc5]"
+                            }`}
                           >
-                            RECORD
+                            {computedStatus === 'DONE' ? 'RECORDED' : 'RECORD'}
                           </button>
                         </td>
                       </tr>
@@ -189,7 +217,7 @@ export default function HandoverList() {
             </table>
           </div>
 
-          {/* Phân trang (Pagination) - Y chang RoomList */}
+          {/* Phân trang (Pagination) */}
           {totalPages > 1 && (
             <div className="flex justify-end items-center gap-1.5 mt-8 text-xs font-medium">
               <button 
