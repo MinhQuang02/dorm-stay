@@ -14,7 +14,7 @@ export default function ContractPayment() {
   useEffect(() => {
     const cached = sessionStorage.getItem('contractPaymentData');
     if (!cached) {
-      navigate('/contract');
+      navigate('/contracts');
       return;
     }
     setContract(JSON.parse(cached));
@@ -23,7 +23,7 @@ export default function ContractPayment() {
   useEffect(() => {
     if (timeLeft <= 0) {
       alert("Payment session expired.");
-      navigate('/contract');
+      navigate('/contracts');
       return;
     }
     const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);

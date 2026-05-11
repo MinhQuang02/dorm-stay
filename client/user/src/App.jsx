@@ -20,10 +20,8 @@ import DepositPayment from './pages/deposit/DepositPayment';
 import DepositSuccess from './pages/deposit/DepositSuccess';
 import DepositUpdate from './pages/deposit/DepositUpdate';
 
-// Contract Pages
-import Contract from './pages/contract/Contract';
-import ContractPayment from './pages/contract/ContractPayment';
-import ContractSuccess from './pages/contract/ContractSuccess';
+// Contract Payment Pages
+import ContractPayment from './pages/contract-payment/ContractPayment';
 
 // Deposit Out Pages
 import DepositOut from './pages/deposit-out/DepositOut';
@@ -63,10 +61,8 @@ function App() {
         <Route path="/deposit/success" element={<DepositSuccess />} />
         <Route path="/deposit/update" element={<DepositUpdate />} />
 
-        {/* Contract Routes */}
-        <Route path="/contract" element={<Contract />} />
-        <Route path="/contract/payment" element={<ContractPayment />} />
-        <Route path="/contract/success" element={<ContractSuccess />} />
+        {/* Contract Payment Routes */}
+        <Route path="/payment" element={<ContractPayment />} />
 
         {/* Deposit Out Routes */}
         <Route path="/deposit-out" element={<DepositOut />} />

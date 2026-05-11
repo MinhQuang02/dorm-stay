@@ -19,7 +19,7 @@ const services = [
   {
     img: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=600&q=80',
     text: '3. This feature allows you to make payments for contract fees.',
-    link: '/contract',
+    link: '/payment',
     name: 'Contract Fees Payment'
   },
   {
