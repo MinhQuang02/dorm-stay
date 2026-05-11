@@ -20,6 +20,16 @@ const lookupCustomer = async (req, res) => {
       },
       include: {
         phieuYeuCau: true,
+        ttinDatCocs: {
+          include: {
+            ttoan: true,
+            giuong: {
+              include: {
+                phong: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -76,8 +86,28 @@ const getRooms = async (req, res) => {
   }
 };
 
+const calculateDepositOut = async (req, res) => {
+  try {
+    res.json({ success: false, message: "Not implemented yet." });
+  } catch (error) {
+    console.error("calculateDepositOut error:", error);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+};
+
+const finalizeDepositOut = async (req, res) => {
+  try {
+    res.json({ success: false, message: "Not implemented yet." });
+  } catch (error) {
+    console.error("finalizeDepositOut error:", error);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+};
+
 module.exports = {
   lookupCustomer,
   getConditions,
-  getRooms
+  getRooms,
+  calculateDepositOut,
+  finalizeDepositOut
 };
