@@ -129,11 +129,8 @@ exports.searchRooms = async (req, res) => {
     const rooms = await prisma.phong.findMany({
       where: {
         trangThai: 'TRONG',
-        // Lọc loại phòng
         loaiPhong: roomType && roomType !== 'Room Type' ? { contains: roomType } : undefined,
-        // Lọc sức chứa
         sucChua: people ? { gte: parseInt(people) } : undefined,
-        // LỌC GIÁ: Tìm phòng có ít nhất 1 giường trống có giá <= maxPrice
         giuongs: {
           some: {
             trangThai: true,
@@ -142,23 +139,25 @@ exports.searchRooms = async (req, res) => {
         }
       },
       include: {
-        giuongs: {
-          where: { trangThai: true },
-          orderBy: { giaGiuong: 'asc' } // Ưu tiên hiện giường rẻ nhất lên trước
-        },
-        quanLyTaiSans: { include: { taiSan: true } }
+        giuongs: { where: { trangThai: true }, orderBy: { giaGiuong: 'asc' } },
+        // LẤY TÀI SẢN: Truy vấn qua bảng trung gian QuanLyTaiSan để lấy tên tài sản
+        quanLyTaiSans: {
+          include: {
+            taiSan: true 
+          }
+        }
       }
     });
 
     const formattedRooms = rooms.map(p => ({
       id: p.idPhong,
       name: p.loaiPhong,
-      address: "District 5, HCM",
-      // Hiển thị giá của giường rẻ nhất trong phòng đó
+      address: "District 5, Ho Chi Minh City",
       price: p.giuongs.length > 0 ? (p.giuongs[0].giaGiuong).toLocaleString('vi-VN') + " đ" : "N/A",
       img: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=600&q=80',
-      people: `Max ${p.sucChua} people`,
-      amenities: p.quanLyTaiSans.map(q => q.taiSan.tenTaiSan)
+      people: `1-${p.sucChua} people`,
+      // Gộp danh sách tên tài sản thành một mảng strings
+      amenities: p.quanLyTaiSans.map(q => q.taiSan.tenTaiSan) 
     }));
 
     return res.json(formattedRooms);
