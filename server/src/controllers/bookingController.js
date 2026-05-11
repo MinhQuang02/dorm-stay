@@ -91,33 +91,61 @@ exports.finalizeBooking = async (req, res) => {
   try {
     const { phieuId, room, bookingDetails } = req.body;
 
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Cập nhật Phiếu yêu cầu với tên phòng và địa chỉ thực tế
-      const phieu = await tx.phieuYeuCau.update({
-        where: { idPhieu: parseInt(phieuId) },
-        data: {
-          loaiPhong: room.name,        // Ví dụ: "Phòng Master tầng 3"
-          khuVucMongMuon: room.address // Ví dụ: "District 5, Ho Chi Minh City"
-        }
-      });
-
-      // 2. Tạo Lịch xem phòng
-      const lich = await tx.lichXemPhong.create({
-        data: {
-          idPhieu: phieu.idPhieu,
-          thoiGianHen: new Date(bookingDetails.date),
-          diaDiem: "Tại: " + room.name,
-          ttLichHen: 'CHUA_XEM'
-        }
-      });
-
-      return { phieu, lich };
+    await prisma.phieuYeuCau.update({
+      where: { idPhieu: parseInt(phieuId) },
+      data: {
+        loaiPhong: room.name,
+        khuVucMongMuon: room.address,
+        thoiDiemVao: new Date(bookingDetails.date) // Lưu vào "Ngày đề xuất"
+      }
     });
 
-    // Trả về success: true để Frontend biết mà chuyển trang
-    res.status(200).json({ success: true, data: result });
+    res.status(200).json({ success: true });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.searchRooms = async (req, res) => {
+  try {
+    const { roomType, people, maxPrice } = req.query;
+
+    const rooms = await prisma.phong.findMany({
+      where: {
+        trangThai: 'TRONG',
+        loaiPhong: roomType && roomType !== 'Room Type' ? { contains: roomType } : undefined,
+        sucChua: people ? { gte: parseInt(people) } : undefined,
+        giuongs: {
+          some: {
+            trangThai: true,
+            giaGiuong: maxPrice && maxPrice !== 'Price' ? { lte: parseFloat(maxPrice) } : undefined
+          }
+        }
+      },
+      include: {
+        giuongs: { where: { trangThai: true }, orderBy: { giaGiuong: 'asc' } },
+        // LẤY TÀI SẢN: Truy vấn qua bảng trung gian QuanLyTaiSan để lấy tên tài sản
+        quanLyTaiSans: {
+          include: {
+            taiSan: true 
+          }
+        }
+      }
+    });
+
+    const formattedRooms = rooms.map(p => ({
+      id: p.idPhong,
+      name: p.loaiPhong,
+      address: "District 5, Ho Chi Minh City",
+      price: p.giuongs.length > 0 ? (p.giuongs[0].giaGiuong).toLocaleString('vi-VN') + " đ" : "N/A",
+      img: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=600&q=80',
+      people: `1-${p.sucChua} people`,
+      // Gộp danh sách tên tài sản thành một mảng strings
+      amenities: p.quanLyTaiSans.map(q => q.taiSan.tenTaiSan) 
+    }));
+
+    return res.json(formattedRooms);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };

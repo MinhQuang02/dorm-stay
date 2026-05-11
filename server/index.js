@@ -9,6 +9,7 @@ const despostRoutes = require('./src/routes/despostRoutes');
 const bookingRoutes = require('./src/routes/bookingRoutes');
 const appointmentRoutes = require('./src/routes/appointment');
 const contractRoutes = require('./src/routes/contractRoutes');
+const handoverRoutes = require('./src/routes/handoverRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,6 +25,7 @@ app.use('/api/deposit', despostRoutes);
 app.use('/api/booking', bookingRoutes);
 app.use('/api/admin', appointmentRoutes);
 app.use('/api/contracts', contractRoutes);
+app.use('/api/handover', handoverRoutes);
 
 app.get('/', (req, res) => {
   res.send('DormStay Backend Running');

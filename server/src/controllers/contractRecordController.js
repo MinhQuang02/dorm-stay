@@ -104,8 +104,9 @@ const getActiveContracts = async (req, res) => {
 // RECORD RESIDENCE (CREATE ChiTietHopDongThue + UPDATE giuong.trangThai) - PRISMA TRANSACTION
 const recordResidence = async (req, res) => {
   try {
-    const { idKhachHang, idHopDong, idGiuong, thongTinCT } = req.body;
+    const { idKhachHang, idHopDong, idGiuong, thongTinCT, isFullRoom, idPhong } = req.body;
 
+    console.log("=== DỮ LIỆU TỪ FRONTEND GỬI XUỐNG ===", req.body);
     // Validate required fields
     if (!idKhachHang || !idHopDong || !idGiuong) {
       return res.status(400).json({
@@ -141,14 +142,12 @@ const recordResidence = async (req, res) => {
       return res.status(400).json({ success: false, message: "Giường này đã được sử dụng." });
     }
 
-    // Check for duplicates (same guest + contract + bed)
-    const existing = await prisma.chiTietHopDongThue.findUnique({
+    // 🛑 Đổi từ findUnique sang findFirst để chống lỗi 500 của Prisma
+    const existing = await prisma.chiTietHopDongThue.findFirst({
       where: {
-        idKhachHang_idHopDong_idGiuong: {
-          idKhachHang: parseInt(idKhachHang),
-          idHopDong: parseInt(idHopDong),
-          idGiuong: parseInt(idGiuong),
-        },
+        idKhachHang: parseInt(idKhachHang),
+        idHopDong: parseInt(idHopDong),
+        idGiuong: parseInt(idGiuong),
       },
     });
     if (existing) {
@@ -165,13 +164,13 @@ const recordResidence = async (req, res) => {
         data: {
           idKhachHang: parseInt(idKhachHang),
           idHopDong: parseInt(idHopDong),
-          idGiuong: isFullRoom ? null : parseInt(idGiuong), // Nếu thuê nguyên phòng có thể để null giường hoặc chọn 1 giường đại diện
-          thongTinCT: isFullRoom ? "Thuê nguyên phòng" : "Thuê giường lẻ",
+          idGiuong: parseInt(idGiuong), 
+          thongTinCT: thongTinCT, 
         },
       });
 
       // 2. Cập nhật trạng thái giường
-      if (isFullRoom) {
+      if (isFullRoom && idPhong) {
         // Nếu thuê nguyên phòng: Khóa TẤT CẢ giường trong phòng đó
         await tx.giuong.updateMany({
           where: { idPhong: parseInt(idPhong) },
@@ -190,6 +189,7 @@ const recordResidence = async (req, res) => {
 
     res.status(201).json({ success: true, data: result });
   } catch (error) {
+    console.error("Lỗi recordResidence:", error);
     res.status(500).json({ success: false, message: "Lỗi ghi nhận cư trú." });
   }
 };
