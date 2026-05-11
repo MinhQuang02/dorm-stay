@@ -85,85 +85,94 @@ export default function RoomList() {
     new Intl.NumberFormat("vi-VN").format(price) + " VNĐ/tháng";
 
   return (
-    <MainLayout title="Room List">
-      <div className="flex-1 px-8 py-10 bg-[#fbfbfa] min-h-screen">
+    <MainLayout title="Record Residence Information">
+      <div className="flex-1 px-4 md:px-8 py-10 bg-[#fbfbfa] min-h-screen flex flex-col items-center">
         
-        <div className="flex justify-end items-center mb-8 gap-4">
-          <div className="relative">
-            <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search room (e.g., 139 or Standard)"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none w-64 text-sm bg-white"
-            />
+        {/* KHUNG TRẮNG CHỨA TẤT CẢ (Giống Prototype) */}
+        <div className="w-full bg-white rounded-[24px] p-6 md:p-10 shadow-sm border border-gray-100">
+          
+          {/* Header: ROOM LIST + Search + Sort */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <h2 className="text-xl font-bold text-black uppercase tracking-wide">ROOM LIST</h2>
+            
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search room (e.g., 139 or Standard)"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9 pr-4 py-2 border border-gray-100 rounded-lg focus:outline-none w-64 text-sm bg-gray-50/50"
+                />
+              </div>
+              <div className="flex items-center bg-gray-50/50 border border-gray-100 rounded-lg px-3 py-2 text-sm">
+                <span className="text-gray-500 mr-2">Sort by :</span>
+                <select 
+                  value={sortBy} 
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="font-medium outline-none bg-transparent cursor-pointer text-gray-800"
+                >
+                  <option value="newest">Newest</option>
+                  <option value="price">Price</option>
+                  <option value="status">Status</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm">
-            <span className="text-gray-500 mr-2">Sort by :</span>
-            <select 
-              value={sortBy} 
-              onChange={(e) => setSortBy(e.target.value)}
-              className="font-medium outline-none bg-transparent cursor-pointer"
-            >
-              <option value="newest">Newest</option>
-              <option value="price">Price</option>
-              <option value="status">Status</option>
-            </select>
-          </div>
-        </div>
 
-        <div className="bg-[#fcfcfc] rounded-2xl p-6 shadow-sm">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-gray-400 text-sm border-b border-transparent">
-                <th className="font-normal pb-4">Room ID</th>
-                <th className="font-normal pb-4">Room Type</th>
-                <th className="font-normal pb-4 text-center">Capacity</th>
-                <th className="font-normal pb-4">Price</th>
-                <th className="font-normal pb-4">Status</th>
-                <th className="font-normal pb-4 text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan="6" className="text-center py-10 text-gray-500">Loading data...</td></tr>
-              ) : paginatedRooms.length === 0 ? (
-                <tr><td colSpan="6" className="text-center py-10 text-gray-500">No rooms found</td></tr>
-              ) : (
-                paginatedRooms.map((room) => (
-                  <tr key={`${room.idPhong}-${room.idGiuong}`} className="border-b border-gray-100/50 last:border-none hover:bg-gray-50/50 transition-colors">
-                    {/* Bỏ chữ R, thêm ID Giường để biết tại sao có nhiều dòng */}
-                    <td className="py-5 font-medium text-gray-800">
-                      {room.idPhong} 
-                      <span className="ml-2 text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded">Bed {room.idGiuong}</span>
-                    </td>
-                    <td className="py-5 text-gray-700">{room.loaiPhong}</td>
-                    <td className="py-5 text-gray-700 text-center">{room.sucChua}</td>
-                    <td className="py-5 text-gray-700">{formatPrice(room.giaGiuong)}</td>
-                    <td className="py-5 text-gray-700">
-                      {room.trangThaiGiuong ? "Available" : "Occupied"}
-                    </td>
-                    <td className="py-5 text-center">
-                      <button
-                        onClick={() => handleRecord(room)}
-                        disabled={!room.trangThaiGiuong}
-                        className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
-                          room.trangThaiGiuong 
-                            ? "bg-[#faedd8] text-[#c07340] hover:bg-[#f1dec1]" 
-                            : "bg-gray-200 text-gray-400 cursor-not-allowed opacity-60"
-                        }`}
-                      >
-                        RECORD
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          {/* Bảng Dữ liệu */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left min-w-[800px]">
+              <thead>
+                <tr className="text-gray-400 text-[13px] border-b border-transparent">
+                  <th className="font-medium pb-4 w-[15%]">Room ID</th>
+                  <th className="font-medium pb-4 w-[20%]">Room Type</th>
+                  <th className="font-medium pb-4 text-center w-[10%]">Capacity</th>
+                  <th className="font-medium pb-4 w-[25%]">Price</th>
+                  <th className="font-medium pb-4 w-[15%]">Status</th>
+                  <th className="font-medium pb-4 text-center w-[15%]">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan="6" className="text-center py-10 text-gray-500">Loading data...</td></tr>
+                ) : paginatedRooms.length === 0 ? (
+                  <tr><td colSpan="6" className="text-center py-10 text-gray-500">No rooms found</td></tr>
+                ) : (
+                  paginatedRooms.map((room) => (
+                    <tr key={`${room.idPhong}-${room.idGiuong}`} className="border-b border-gray-50 last:border-none hover:bg-gray-50/50 transition-colors">
+                      <td className="py-5 font-medium text-gray-800 text-[13px]">
+                        {room.idPhong} 
+                        <span className="ml-2 text-[11px] font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">Bed {room.idGiuong}</span>
+                      </td>
+                      <td className="py-5 text-gray-700 text-[13px]">{room.loaiPhong}</td>
+                      <td className="py-5 text-gray-700 text-center text-[13px]">{room.sucChua}</td>
+                      <td className="py-5 text-gray-700 text-[13px]">{formatPrice(room.giaGiuong)}</td>
+                      <td className="py-5 text-gray-700 text-[13px]">
+                        {room.trangThaiGiuong ? "Available" : "Occupied"}
+                      </td>
+                      <td className="py-5 text-center">
+                        <button
+                          onClick={() => handleRecord(room)}
+                          disabled={!room.trangThaiGiuong}
+                          className={`px-5 py-2 rounded border text-[11px] uppercase font-bold transition-all tracking-wide ${
+                            room.trangThaiGiuong 
+                              ? "bg-[#faeddb] text-[#d58047] border-[#efd9c2] hover:bg-[#f2dfc5]" 
+                              : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-70"
+                          }`}
+                        >
+                          RECORD
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
           {/* Phân trang (Pagination) */}
           {totalPages > 1 && (

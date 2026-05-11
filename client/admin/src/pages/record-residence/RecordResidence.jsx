@@ -120,7 +120,7 @@ export default function RecordResidence() {
           <div className="space-y-8">
             {/* 1. Chọn Hợp đồng */}
             <div>
-              <h3 className="text-sm font-semibold text-[#cf743b] mb-4 uppercase">1. Chọn Hợp đồng:</h3>
+              <h3 className="text-sm font-semibold text-[#cf743b] mb-4 uppercase">Contract:</h3>
               <select
                 value={selectedContractId}
                 onChange={(e) => setSelectedContractId(e.target.value)}
@@ -137,7 +137,7 @@ export default function RecordResidence() {
 
             {/* 2. Customer Information - Đã xóa ô "Số người" */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-600 mb-4 uppercase">2. Customer Information:</h3>
+              <h3 className="text-sm font-semibold text-gray-600 mb-4 uppercase">Customer Information:</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1.5 ml-1">Full Name</label>
@@ -161,7 +161,7 @@ export default function RecordResidence() {
 
             {/* 3. Room Details */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-600 mb-4 uppercase">3. Room Details:</h3>
+              <h3 className="text-sm font-semibold text-gray-600 mb-4 uppercase">Room Details:</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1.5 ml-1">Room ID</label>
