@@ -121,3 +121,48 @@ exports.finalizeBooking = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+exports.searchRooms = async (req, res) => {
+  try {
+    const { roomType, people, maxPrice } = req.query;
+
+    const rooms = await prisma.phong.findMany({
+      where: {
+        trangThai: 'TRONG',
+        // Lọc loại phòng
+        loaiPhong: roomType && roomType !== 'Room Type' ? { contains: roomType } : undefined,
+        // Lọc sức chứa
+        sucChua: people ? { gte: parseInt(people) } : undefined,
+        // LỌC GIÁ: Tìm phòng có ít nhất 1 giường trống có giá <= maxPrice
+        giuongs: {
+          some: {
+            trangThai: true,
+            giaGiuong: maxPrice && maxPrice !== 'Price' ? { lte: parseFloat(maxPrice) } : undefined
+          }
+        }
+      },
+      include: {
+        giuongs: {
+          where: { trangThai: true },
+          orderBy: { giaGiuong: 'asc' } // Ưu tiên hiện giường rẻ nhất lên trước
+        },
+        quanLyTaiSans: { include: { taiSan: true } }
+      }
+    });
+
+    const formattedRooms = rooms.map(p => ({
+      id: p.idPhong,
+      name: p.loaiPhong,
+      address: "District 5, HCM",
+      // Hiển thị giá của giường rẻ nhất trong phòng đó
+      price: p.giuongs.length > 0 ? (p.giuongs[0].giaGiuong).toLocaleString('vi-VN') + " đ" : "N/A",
+      img: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=600&q=80',
+      people: `Max ${p.sucChua} people`,
+      amenities: p.quanLyTaiSans.map(q => q.taiSan.tenTaiSan)
+    }));
+
+    return res.json(formattedRooms);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
