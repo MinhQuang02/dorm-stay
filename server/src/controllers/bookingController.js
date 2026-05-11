@@ -92,16 +92,16 @@ exports.finalizeBooking = async (req, res) => {
     const { phieuId, room, bookingDetails } = req.body;
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Cập nhật Phiếu yêu cầu với tên phòng và địa chỉ thực tế
+      // CẬP NHẬT PHIẾU CŨ: Thay "Đang chọn..." bằng tên phòng thật
       const phieu = await tx.phieuYeuCau.update({
         where: { idPhieu: parseInt(phieuId) },
         data: {
-          loaiPhong: room.name,        // Ví dụ: "Phòng Master tầng 3"
-          khuVucMongMuon: room.address // Ví dụ: "District 5, Ho Chi Minh City"
+          loaiPhong: room.name,        // Ghi đè: "Phòng Master tầng 10"
+          khuVucMongMuon: room.address // Ghi đè địa chỉ
         }
       });
 
-      // 2. Tạo Lịch xem phòng
+      // Tạo lịch hẹn
       const lich = await tx.lichXemPhong.create({
         data: {
           idPhieu: phieu.idPhieu,
@@ -114,7 +114,6 @@ exports.finalizeBooking = async (req, res) => {
       return { phieu, lich };
     });
 
-    // Trả về success: true để Frontend biết mà chuyển trang
     res.status(200).json({ success: true, data: result });
   } catch (error) {
     console.error(error);

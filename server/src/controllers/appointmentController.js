@@ -2,19 +2,21 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // 1. Lấy danh sách phiếu CHƯA XEM PHÒNG (Dùng cho Appointment.jsx)
+// 1. Lấy danh sách phiếu CHƯA XEM PHÒNG (Dùng cho Appointment.jsx)
 exports.getPendingRequests = async (req, res) => {
   try {
     const requests = await prisma.phieuYeuCau.findMany({
       where: {
         OR: [
-          { lichXemPhongs: { none: {} } }, // Chưa có lịch hẹn nào
-          { lichXemPhongs: { some: { ttLichHen: 'CHUA_XEM' } } } // Có lịch nhưng chưa xem
+          { lichXemPhongs: { none: {} } }, 
+          { lichXemPhongs: { some: { ttLichHen: 'CHUA_XEM' } } }
         ]
       },
       include: {
         taiKhoanMoiNhat: { include: { khachHang: true } },
         lichXemPhongs: {
-          where: { ttLichHen: 'CHUA_XEM' } // Chỉ lấy lịch đang chờ
+          where: { ttLichHen: 'CHUA_XEM' },
+          orderBy: { thoiGianHen: 'asc' } // Lấy lịch hẹn gần nhất
         }
       },
       orderBy: { idPhieu: 'desc' }
@@ -24,10 +26,12 @@ exports.getPendingRequests = async (req, res) => {
       const activeSchedule = p.lichXemPhongs[0];
       return {
         idPhieu: p.idPhieu,
-        idLichHen: activeSchedule?.idLichHen || null, // Trả về ID lịch để xử lý hoàn tất
+        idLichHen: activeSchedule?.idLichHen || null,
         customerName: p.taiKhoanMoiNhat?.khachHang?.hoTen || "N/A",
         phone: p.taiKhoanMoiNhat?.khachHang?.sdt || "N/A",
-        proposedDate: p.thoiDiemVao || "Flexible",
+        
+        proposedDate: activeSchedule?.thoiGianHen || p.thoiDiemVao || "Flexible",
+        
         hasSchedule: !!activeSchedule
       };
     });
