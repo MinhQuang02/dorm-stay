@@ -101,13 +101,14 @@ const getActiveContracts = async (req, res) => {
   }
 };
 
-// RECORD RESIDENCE (CREATE ChiTietHopDongThue + UPDATE giuong.trangThai) - PRISMA TRANSACTION
+// RECORD RESIDENCE - Cập nhật đồng bộ Ngày bắt đầu & Ngày kết thúc
 const recordResidence = async (req, res) => {
   try {
-    const { idKhachHang, idHopDong, idGiuong, thongTinCT, isFullRoom, idPhong } = req.body;
+    // 1. Nhận thêm cả beginDate và endDate
+    const { idKhachHang, idHopDong, idGiuong, thongTinCT, isFullRoom, idPhong, beginDate, endDate } = req.body;
 
     console.log("=== DỮ LIỆU TỪ FRONTEND GỬI XUỐNG ===", req.body);
-    // Validate required fields
+    
     if (!idKhachHang || !idHopDong || !idGiuong) {
       return res.status(400).json({
         success: false,
@@ -115,34 +116,16 @@ const recordResidence = async (req, res) => {
       });
     }
 
-    // Check the client exists
-    const khachHang = await prisma.khachHang.findUnique({
-      where: { idKhachHang: parseInt(idKhachHang) },
-    });
-    if (!khachHang) {
-      return res.status(404).json({ success: false, message: "Không tìm thấy khách hàng." });
-    }
+    const khachHang = await prisma.khachHang.findUnique({ where: { idKhachHang: parseInt(idKhachHang) } });
+    if (!khachHang) return res.status(404).json({ success: false, message: "Không tìm thấy khách hàng." });
 
-    // Check the contract exists
-    const hopDong = await prisma.hopDongThue.findUnique({
-      where: { idHopDong: parseInt(idHopDong) },
-    });
-    if (!hopDong) {
-      return res.status(404).json({ success: false, message: "Không tìm thấy hợp đồng." });
-    }
+    const hopDong = await prisma.hopDongThue.findUnique({ where: { idHopDong: parseInt(idHopDong) } });
+    if (!hopDong) return res.status(404).json({ success: false, message: "Không tìm thấy hợp đồng." });
 
-    // Check beds exist and are available
-    const giuong = await prisma.giuong.findUnique({
-      where: { idGiuong: parseInt(idGiuong) },
-    });
-    if (!giuong) {
-      return res.status(404).json({ success: false, message: "Không tìm thấy giường." });
-    }
-    if (!giuong.trangThai) {
-      return res.status(400).json({ success: false, message: "Giường này đã được sử dụng." });
-    }
+    const giuong = await prisma.giuong.findUnique({ where: { idGiuong: parseInt(idGiuong) } });
+    if (!giuong) return res.status(404).json({ success: false, message: "Không tìm thấy giường." });
+    if (!giuong.trangThai) return res.status(400).json({ success: false, message: "Giường này đã được sử dụng." });
 
-    // 🛑 Đổi từ findUnique sang findFirst để chống lỗi 500 của Prisma
     const existing = await prisma.chiTietHopDongThue.findFirst({
       where: {
         idKhachHang: parseInt(idKhachHang),
@@ -151,15 +134,25 @@ const recordResidence = async (req, res) => {
       },
     });
     if (existing) {
-      return res.status(409).json({
-        success: false,
-        message: "Thông tin cư trú này đã được ghi nhận trước đó.",
-      });
+      return res.status(409).json({ success: false, message: "Thông tin cư trú này đã được ghi nhận trước đó." });
     }
 
-    // Transaction: INSERT ChiTietHopDongThue + UPDATE TrangThai
+    // Transaction: INSERT ChiTietHopDongThue + UPDATE TrangThai + UPDATE Ngày
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Tạo bản ghi chi tiết cư trú
+      
+      // 2. Cập nhật đồng thời CẢ HAI ngày vào Hợp đồng
+      const updateData = {};
+      if (beginDate) updateData.ngayBatDau = new Date(beginDate);
+      if (endDate)   updateData.ngayKetThuc = new Date(endDate);
+      
+      if (Object.keys(updateData).length > 0) {
+        await tx.hopDongThue.update({
+          where: { idHopDong: parseInt(idHopDong) },
+          data: updateData 
+        });
+      }
+
+      // 3. Tạo bản ghi chi tiết cư trú (thongTinCT giờ đã sạch đẹp)
       const chiTiet = await tx.chiTietHopDongThue.create({
         data: {
           idKhachHang: parseInt(idKhachHang),
@@ -169,15 +162,13 @@ const recordResidence = async (req, res) => {
         },
       });
 
-      // 2. Cập nhật trạng thái giường
+      // 4. Khóa giường
       if (isFullRoom && idPhong) {
-        // Nếu thuê nguyên phòng: Khóa TẤT CẢ giường trong phòng đó
         await tx.giuong.updateMany({
           where: { idPhong: parseInt(idPhong) },
           data: { trangThai: false }
         });
       } else {
-        // Nếu thuê giường lẻ: Chỉ khóa đúng giường đó
         await tx.giuong.update({
           where: { idGiuong: parseInt(idGiuong) },
           data: { trangThai: false },
@@ -194,25 +185,23 @@ const recordResidence = async (req, res) => {
   }
 };
 
-// FIND CUSTOMER BY CCCD, SĐT hoặc hoTen + SĐT
+// FIND CUSTOMER BY CCCD OR SĐT (Giữ đúng logic của bạn ở tam.js)
 const findCustomer = async (req, res) => {
   try {
-    const { cccd, sdt, hoTen } = req.query;
+    const { cccd, sdt } = req.query;
 
-    if (!cccd && !sdt && !(hoTen && sdt)) {
-      return res.status(400).json({ success: false, message: "Vui lòng nhập CCCD hoặc SĐT, hoặc hoTen và SĐT." });
+    if (!cccd && !sdt) {
+      return res.status(400).json({ success: false, message: "Vui lòng nhập CCCD hoặc SĐT." });
     }
 
-    let where;
-    if (cccd) {
-      where = { cccd };
-    } else if (hoTen && sdt) {
-      where = { hoTen, sdt };
-    } else {
-      where = { sdt };
-    }
-
-    const khachHang = await prisma.khachHang.findFirst({ where });
+    const khachHang = await prisma.khachHang.findFirst({
+      where: {
+        OR: [
+          cccd ? { cccd } : undefined,
+          sdt ? { sdt } : undefined,
+        ].filter(Boolean),
+      },
+    });
 
     if (!khachHang) {
       return res.status(404).json({ success: false, message: "Không tìm thấy khách hàng." });
@@ -226,9 +215,9 @@ const findCustomer = async (req, res) => {
 };
 
 module.exports = {
-    getRooms,
-    getContractById,
-    getActiveContracts,
-    recordResidence,
-    findCustomer
-  };
+  getRooms,
+  getContractById,
+  getActiveContracts,
+  recordResidence,
+  findCustomer
+};
