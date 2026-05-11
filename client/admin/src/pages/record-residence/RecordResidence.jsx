@@ -79,6 +79,9 @@ export default function RecordResidence() {
       return;
     }
 
+    const contract = activeContracts.find(c => c.idHopDong === parseInt(selectedContractId));
+    const isFullRoom = contract?.hinhThuc === 'NGUYEN_PHONG';
+    
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`${API_BASE}/contracts/residence`, {
@@ -91,7 +94,9 @@ export default function RecordResidence() {
           idKhachHang: customerInfo.idKhachHang,
           idHopDong: parseInt(selectedContractId),
           idGiuong: selectedRoom.idGiuong,
-          thongTinCT: `Bắt đầu từ: ${formData.beginDate}, Số người: ${formData.numberOfPeople}`
+          idPhong: selectedRoom.idPhong, // Đã bổ sung idPhong
+          isFullRoom: isFullRoom,        // Đã bổ sung isFullRoom
+          thongTinCT: `Bắt đầu từ: ${formData.beginDate} - ${isFullRoom ? 'Thuê nguyên phòng' : 'Thuê giường lẻ'}`
         }),
       });
 
