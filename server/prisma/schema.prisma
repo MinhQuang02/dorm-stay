@@ -69,39 +69,48 @@ model TaiKhoan {
 }
 
 model KhachHang {
-  idKhachHang     Int           @id @default(autoincrement())
+  idKhachHang     Int       @id @default(autoincrement())
   hoTen           String
   sdt             String
-  // ... các trường khác giữ nguyên ...
+  email           String?
+  gioiTinh        String?
+  ngaySinh        DateTime?
+  cccd            String    @unique
+  quocTich        String?
+  minhChungTC     String?
 
-  // 1. Thêm trường lưu ID khóa ngoại
-  phieuYeuCauId   Int?          @unique // Thêm @unique nếu 1 phiếu chỉ thuộc về 1 khách
-  
-  // 2. Thiết lập quan hệ trỏ đến model PhieuYeuCau
-  phieuYeuCau     PhieuYeuCau?  @relation(fields: [phieuYeuCauId], references: [idPhieu])
+  // Quan hệ 1-1 với TaiKhoan
+  idTaiKhoan      Int?      @unique
+  taiKhoan        TaiKhoan? @relation(fields: [idTaiKhoan], references: [idTaiKhoan])
 
-  // Các quan hệ hiện có khác
-  idTaiKhoan      Int?          @unique
-  taiKhoan        TaiKhoan?     @relation(fields: [idTaiKhoan], references: [idTaiKhoan])
-  ttinDatCocs     TtinDatCoc[]
-  chiTietHopDongs ChiTietHopDongThue[]
-  banGhiChiPhis   BanGhiChiPhi[]
+  // ===== FK tới Phiếu yêu cầu =====
+  phieuYeuCauId   Int?
+  phieuYeuCau     PhieuYeuCau? @relation(fields: [phieuYeuCauId], references: [idPhieu])
+
+  // Các quan hệ khác
+  ttinDatCocs      TtinDatCoc[]
+  chiTietHopDongs  ChiTietHopDongThue[]
+  banGhiChiPhis    BanGhiChiPhi[]
 }
 
 model PhieuYeuCau {
-  idPhieu         Int             @id @default(autoincrement())
-  hinhThucThue    HinhThucThue
-  soNguoi         Int
-  // ... các trường khác giữ nguyên ...
+  idPhieu          Int       @id @default(autoincrement())
+  hinhThucThue     HinhThucThue
+  soNguoi          Int
+  khuVucMongMuon   String?
+  giaMongMuon      Float?
+  thoiDiemVao      DateTime?
+  thoiHanThue      Int?
+  yeuCauThem       String?
+  loaiPhong        String?
 
-  // 3. Khai báo quan hệ ngược (Virtual field)
-  khachHang       KhachHang?      // Nếu là quan hệ 1-1
-  // khachHangs    KhachHang[]    // Dùng dòng này nếu 1 phiếu có thể có nhiều khách hàng (1-n)
+  // ===== RELATION NGƯỢC =====
+  khachHangs       KhachHang[]
 
-  taiKhoanMoiNhat TaiKhoan?       @relation("PhieuMoiNhat")
-  lichSuTaos      LichSuTaoPhieu[]
-  lichXemPhongs   LichXemPhong[]
-  hopDongs        HopDongThue[]
+  taiKhoanMoiNhat  TaiKhoan? @relation("PhieuMoiNhat")
+  lichSuTaos       LichSuTaoPhieu[]
+  lichXemPhongs    LichXemPhong[]
+  hopDongs         HopDongThue[]
 }
 
 model LichSuTaoPhieu {
