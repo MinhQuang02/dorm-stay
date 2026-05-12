@@ -166,9 +166,6 @@ const processPayment = async (req, res) => {
     if (!hopDong) {
       return res.status(404).json({ success: false, message: 'Contract not found.' });
     }
-    if (hopDong.trangThai === 'HET_HAN' || hopDong.trangThai === 'TERMINATED') {
-      return res.status(400).json({ success: false, message: 'Contract is no longer active.' });
-    }
 
     const now         = new Date();
     const phuongThucEnum = phuongThuc === 'CHUYEN_KHOAN' ? 'CHUYEN_KHOAN' : 'TIEN_MAT';
