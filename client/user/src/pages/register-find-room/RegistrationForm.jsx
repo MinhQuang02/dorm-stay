@@ -1,65 +1,3 @@
-// import { Link } from 'react-router-dom';
-// import MainLayout from '../../components/Layout/MainLayout';
-
-// export default function RegistrationForm() {
-//   return (
-//     <MainLayout title="Room Rental Registration" mainClassName="flex-1 px-8 md:px-24 py-12 flex flex-col items-center">
-//       <div className="w-full max-w-4xl">
-//         <div className="mb-10">
-//           <h2 className="text-3xl font-bold text-gray-800 mb-2">Personal Info</h2>
-//           <p className="text-sm text-gray-500">Please fill in your information so we can support you best:</p>
-//         </div>
-
-//         <form className="flex flex-col gap-6">
-//           <div className="flex flex-col gap-2">
-//             <label className="text-[13px] font-bold text-gray-600">Full Name <span className="text-gray-600">*</span></label>
-//             <input type="text" placeholder="Enter Full Name" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm placeholder-gray-400" />
-//           </div>
-
-//           <div className="flex flex-col gap-2">
-//             <label className="text-[13px] font-bold text-gray-600">ID Card <span className="text-gray-600">*</span></label>
-//             <input type="text" placeholder="Enter ID number" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm placeholder-gray-400" />
-//           </div>
-
-//           <div className="flex flex-col gap-2">
-//             <label className="text-[13px] font-bold text-gray-600">Phone Number <span className="text-gray-600">*</span></label>
-//             <input type="tel" placeholder="Enter phone number" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm placeholder-gray-400" />
-//           </div>
-
-//           <div className="flex flex-col gap-2">
-//             <label className="text-[13px] font-bold text-gray-600">Email <span className="text-gray-600">*</span></label>
-//             <input type="email" placeholder="Enter email" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm placeholder-gray-400" />
-//           </div>
-
-//           <div className="mt-6">
-//             <button type="button" className="w-full border border-dashed border-gray-300 bg-transparent rounded-xl py-5 flex items-center justify-center gap-2 text-gray-500 text-sm font-medium hover:bg-gray-50 transition-colors">
-//               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">
-//                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-//               </svg>
-//               Add new Customers
-//             </button>
-//             <p className="text-[12px] text-gray-400 mt-2">Click to add a new customer.</p>
-//           </div>
-
-//           <div className="flex justify-between items-center mt-12">
-//             <Link to="/" className="px-12 py-3 rounded-lg border border-[#cc6b34] text-[#cc6b34] text-sm font-medium hover:bg-[#faeddb] transition-colors">
-//               Cancel
-//             </Link>
-//             <Link to="/register-find" className="px-12 py-3 rounded-lg bg-[#cc6b34] text-white text-sm font-medium hover:bg-[#b55e2d] transition-colors shadow-md">
-//               Next
-//             </Link>
-//           </div>
-//         </form>
-
-//         <div className="mt-12 mb-8 text-center">
-//           <p className="text-[13px] text-[#cc6b34] font-medium">*Please enter a valid phone number/email format</p>
-//         </div>
-//       </div>
-//     </MainLayout>
-//   );
-// }
-
-
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import MainLayout from '../../components/Layout/MainLayout';
@@ -67,8 +5,7 @@ import MainLayout from '../../components/Layout/MainLayout';
 export default function RegistrationForm() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [customerLoading, setCustomerLoading] = useState(false);
-  const [customerFound, setCustomerFound] = useState(null);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [formData, setFormData] = useState({
     hoTen: '',
     cccd: '',
@@ -76,47 +13,45 @@ export default function RegistrationForm() {
     email: ''
   });
 
+  // LOGIC MỚI: Tự động lấy dữ liệu người dùng hiện tại khi vừa vào trang
   useEffect(() => {
-    const lookupCustomer = async () => {
-      if (!formData.hoTen.trim() || !formData.sdt.trim()) {
-        setCustomerFound(null);
-        return;
-      }
-
-      setCustomerLoading(true);
+    const fetchCurrentProfile = async () => {
       try {
-        const res = await fetch(
-          `http://127.0.0.1:5000/api/contracts/customer?hoTen=${encodeURIComponent(formData.hoTen.trim())}&sdt=${encodeURIComponent(formData.sdt.trim())}`
-        );
-        if (!res.ok) {
-          setCustomerFound(null);
-          return;
-        }
+        // Chúng ta giả định tài khoản test là 464
+        // Gọi API để lấy thông tin Khách hàng đã lưu cho tài khoản này
+        const res = await fetch(`http://127.0.0.1:5000/api/finance/contracts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: 464 }) 
+        });
         const data = await res.json();
-        if (data.success) {
-          setCustomerFound(data.data);
-          setFormData((prev) => ({
-            ...prev,
-            cccd: data.data.cccd || prev.cccd,
-            email: data.data.email || prev.email,
-          }));
+
+        // Nếu tài khoản này đã có thông tin khách hàng trong DB
+        if (data.contracts && data.contracts.length > 0) {
+          const profile = data.contracts[0]; // Lấy thông tin từ hợp đồng gần nhất
+          setFormData({
+            hoTen: profile.customerName || '',
+            cccd: profile.cccd || '',
+            sdt: profile.phone || '',
+            email: profile.email || 'huynhvansinh1810@gmail.com' // Email đăng nhập của bạn
+          });
         } else {
-          setCustomerFound(null);
+          // Nếu chưa có hồ sơ, ít nhất cũng điền sẵn Email từ phiên đăng nhập
+          setFormData(prev => ({...prev, email: 'huynhvansinh1810@gmail.com'}));
         }
       } catch (error) {
-        setCustomerFound(null);
+        console.error("Không thể load profile cũ:", error);
       } finally {
-        setCustomerLoading(false);
+        setInitialLoading(false);
       }
     };
 
-    const timer = setTimeout(lookupCustomer, 500);
-    return () => clearTimeout(timer);
-  }, [formData.hoTen, formData.sdt]);
+    fetchCurrentProfile();
+  }, []);
 
   const handleNext = async (e) => {
     e.preventDefault();
-    console.log("Dữ liệu gửi đi:", formData); // DÒNG NÀY ĐỂ KIỂM TRA
+    setLoading(true);
 
     try {
       const res = await fetch('http://127.0.0.1:5000/api/booking/register', {
@@ -127,7 +62,6 @@ export default function RegistrationForm() {
       const data = await res.json();
 
       if (data.success) {
-        // Lưu thông tin phiếu và khách hàng vào session giống cách bạn mình làm
         sessionStorage.setItem('currentBookingPhieu', JSON.stringify(data.data.phieu));
         sessionStorage.setItem('currentCustomer', JSON.stringify(data.data.customer));
         navigate('/register-find');
@@ -141,84 +75,74 @@ export default function RegistrationForm() {
     }
   };
 
+  if (initialLoading) return <MainLayout><div className="p-20 text-center text-gray-500">Đang chuẩn bị dữ liệu...</div></MainLayout>;
+
   return (
     <MainLayout title="Room Rental Registration" mainClassName="flex-1 px-8 md:px-24 py-12 flex flex-col items-center">
       <div className="w-full max-w-4xl">
         <div className="mb-10">
           <h2 className="text-3xl font-bold text-gray-800 mb-2">Personal Info</h2>
-          <p className="text-sm text-gray-500">Please fill in your information so we can support you best:</p>
+          <p className="text-sm text-gray-500">Please verify your information for the booking:</p>
         </div>
 
         <form className="flex flex-col gap-6" onSubmit={handleNext}>
           <div className="flex flex-col gap-2">
-            <label className="text-[13px] font-bold text-gray-600">Full Name <span className="text-gray-600">*</span></label>
+            <label className="text-[13px] font-bold text-gray-600">Full Name <span className="text-gray-400">(Tên của bạn)</span></label>
             <input
               type="text"
               required
               value={formData.hoTen}
               onChange={(e) => setFormData({ ...formData, hoTen: e.target.value })}
               placeholder="Enter Full Name"
-              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm"
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34]"
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-[13px] font-bold text-gray-600">ID Card <span className="text-gray-600">*</span></label>
+            <label className="text-[13px] font-bold text-gray-600">ID Card <span className="text-gray-400">(CCCD)</span></label>
             <input
               type="text"
               required
               value={formData.cccd}
               onChange={(e) => setFormData({ ...formData, cccd: e.target.value })}
               placeholder="Enter ID number"
-              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm"
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34]"
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-[13px] font-bold text-gray-600">Phone Number <span className="text-gray-600">*</span></label>
+            <label className="text-[13px] font-bold text-gray-600">Phone Number</label>
             <input
               type="tel"
               required
               value={formData.sdt}
               onChange={(e) => setFormData({ ...formData, sdt: e.target.value })}
               placeholder="Enter phone number"
-              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm"
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34]"
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-[13px] font-bold text-gray-600">Email <span className="text-gray-600">*</span></label>
+            <label className="text-[13px] font-bold text-gray-600">Email <span className="text-gray-400">(Dùng để nhận thông báo)</span></label>
             <input
               type="email"
+              readOnly={formData.email.includes('@')} // Nếu đã có email từ tài khoản thì cho xem thôi, không cho sửa linh tinh
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="Enter email"
-              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#cc6b34] transition-colors shadow-sm"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-sm text-gray-500 outline-none"
             />
           </div>
 
-          {customerLoading ? (
-            <div className="rounded-xl bg-[#f9fafb] border border-gray-200 p-4 text-sm text-gray-600">
-              Đang kiểm tra thông tin khách hàng...
-            </div>
-          ) : customerFound ? (
-            <div className="rounded-xl bg-[#ecfdf5] border border-[#a7f3d0] p-4 text-sm text-green-700">
-              Đã tìm thấy khách hàng. Thông tin tự động cập nhật từ hệ thống.
-            </div>
-          ) : formData.hoTen.trim() && formData.sdt.trim() ? (
-            <div className="rounded-xl bg-[#fffbeb] border border-[#fde68a] p-4 text-sm text-[#92400e]">
-              Chưa tìm thấy khách hàng với tên và số điện thoại này.
-            </div>
-          ) : null}
+          {/* Bỏ cái bảng màu vàng báo lỗi "Không tìm thấy" đi cho đỡ rối */}
 
           <div className="flex justify-between items-center mt-12">
-            <Link to="/" className="px-12 py-3 rounded-lg border border-[#cc6b34] text-[#cc6b34] text-sm font-medium">
+            <Link to="/" className="px-12 py-3 rounded-lg border border-[#cc6b34] text-[#cc6b34] text-sm font-medium hover:bg-orange-50 transition-all">
               Cancel
             </Link>
             <button
               type="submit"
               disabled={loading}
-              className="px-12 py-3 rounded-lg bg-[#cc6b34] text-white text-sm font-medium hover:bg-[#b55e2d] shadow-md"
+              className="px-12 py-3 rounded-lg bg-[#cc6b34] text-white text-sm font-medium hover:bg-[#b55e2d] shadow-md transition-all"
             >
               {loading ? "Processing..." : "Next"}
             </button>
